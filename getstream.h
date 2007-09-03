@@ -107,8 +107,10 @@ struct adapter_s {
 	int				budgetmode;
 
 	/* fe.c */
-	struct event			snrmonev;
-	uint32_t			snr, ber, signal;
+	int			fefd;
+	struct event		fetimer;
+	struct event		feevent;
+	time_t			fetunelast;
 
 	struct {					/* Tuning information DVB-S */
 		unsigned long	lnb_lof1;
@@ -142,6 +144,8 @@ struct adapter_s {
 	/* dvr */
 	int			dvrfd;
 	struct event		dvrevent;
+	struct event		dvrflexcoptimer;
+	time_t			lastinput;
 
 	struct {
 		GList		*callback;
@@ -152,7 +156,7 @@ struct adapter_s {
 
 	int			dvrbufsize;		/* Config option */
 	uint8_t			*dvrbuf;
-	unsigned int		reads;			/* Reads in the stats interval */
+	unsigned int		dvrreads;		/* Reads in the stats interval */
 	uint8_t			pidcc[PID_MAX+1];
 
 	int			statinterval;		/* Config option */
@@ -163,8 +167,6 @@ struct adapter_s {
 	int			dmxfd[PID_MAX+1];
 	struct event		dmxevent;
 
-	/* Only to be touched by fe_tune_thread */
-	int			fefd;
 
 	/* PAT */
 	struct {
@@ -200,6 +202,7 @@ void *demux_add_pnr(struct adapter_s *a,
  *
  */
 int fe_tune_init(struct adapter_s *adapter);
+void fe_retune(struct adapter_s *adapter);
 
 /*
  *

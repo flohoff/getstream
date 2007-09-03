@@ -4,7 +4,6 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <errno.h>
-#include <pthread.h>
 #include <time.h>
 
 #include <string.h>
@@ -46,7 +45,7 @@ void diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
 static int head_diseqc(int secfd, int satno, int voltage, int tone) {
 	struct diseqc_cmd cmd = { {{0xe0, 0x10, 0x38, 0xf0, 0x00, 0x00}, 4}, 0 };
 
-	/* 
+	/*
 	 * param: high nibble: reset bits, low nibble set bits,
 	 * bits are: option, position, polarizaion, band
 	 */
@@ -331,12 +330,12 @@ static int fe_tune_dvbc(struct adapter_s *adapter) {
 	return 0;
 }
 
+#if 0
 static void fe_monitor(struct adapter_s *a) {
 	uint32_t		ber;
 	uint16_t		signal;
 	uint16_t		snr;
 	uint32_t		uncorrected;
-
 	if (ioctl(a->fefd, FE_READ_BER, &ber) >= 0) {
 		a->ber=ber;
 	}
@@ -352,38 +351,109 @@ static void fe_monitor(struct adapter_s *a) {
 	logwrite(LOG_DEBUG, "fe: BER %d SNR %d Signal strength %d Uncorrected blocks %u",
 		ber, snr, signal, uncorrected);
 }
+#endif
 
 static int fe_tune(struct adapter_s *adapter) {
 	logwrite(LOG_INFO, "fe: Setting up frontend tuner");
 
 	switch(adapter->type) {
-		case (AT_DVBS):
-			return fe_tune_dvbs(adapter);
+		case(AT_DVBS):
+			fe_tune_dvbs(adapter);
 			break;
 		case(AT_DVBT):
-			return fe_tune_dvbt(adapter);
+			fe_tune_dvbt(adapter);
 			break;
 		case(AT_DVBC):
-			return fe_tune_dvbc(adapter);
+			fe_tune_dvbc(adapter);
 			break;
 	}
+
+	adapter->fetunelast=time(NULL);
 
 	return 0;
 }
 
 
-#define STATUS_POLL_INTERVAL	120
-#define RETUNE_INTERVAL		10
+#define FE_TUNE_MINDELAY	5
 
-static void *tune_thread(void *arg) {
+void fe_retune(struct adapter_s *adapter) {
+	time_t		now;
+
+	now=time(NULL);
+
+	/* Debounce the retuning */
+	if (adapter->fetunelast + FE_TUNE_MINDELAY > now)
+		return;
+
+	fe_tune(adapter);
+}
+
+static void fe_timer_init(struct adapter_s *adapter);
+
+static void fe_check_status(int fd, short event, void *arg) {
+	struct adapter_s	*adapter=arg;
+	fe_status_t		status;
+	int			res;
+
+	res=ioctl(adapter->fefd, FE_READ_STATUS, &status);
+
+	if (res == 0) {
+		if (!(status & FE_HAS_LOCK)) {
+			logwrite(LOG_INFO, "fe: Adapter %d Status: 0x%02x (%s)",
+					adapter->no, status, fe_decode_status(status));
+			fe_retune(adapter);
+		}
+	}
+
+	fe_timer_init(adapter);
+}
+
+#define FE_CHECKSTATUS_INTERVAL	5
+
+static void fe_timer_init(struct adapter_s *adapter) {
+	struct timeval	tv;
+
+	tv.tv_sec=FE_CHECKSTATUS_INTERVAL;
+	tv.tv_usec=0;
+
+	evtimer_set(&adapter->fetimer, fe_check_status, adapter);
+	evtimer_add(&adapter->fetimer, &tv);
+}
+
+/*
+ * We had an event on the frontend filedescriptor - poll the event
+ * and dump the status
+ *
+ */
+static void fe_event(int fd, short ev, void *arg) {
 	struct adapter_s		*adapter=arg;
-	char				fename[128];
-	int				status,
-					res;
-	struct pollfd			pfd;
+	int				res, status;
 	struct dvb_frontend_event	event;
-	time_t				lasttune, now, laststatus;
-	fe_status_t			gstatus;
+
+	res=ioctl(adapter->fefd, FE_GET_EVENT, &event);
+
+	if (res < 0 && errno != EOVERFLOW) {
+		logwrite(LOG_ERROR, "fe: Adapter %d Status event overflow %d",
+				adapter->no, errno);
+		return;
+	}
+
+	if (res >= 0 && event.status) {
+		if (!(event.status & FE_TIMEDOUT)) {
+			status=event.status;
+
+			logwrite(LOG_INFO, "fe: Adapter %d Status: 0x%02x (%s)",
+				adapter->no, status, fe_decode_status(status));
+
+			if (!(event.status & FE_HAS_LOCK)) {
+				fe_retune(adapter);
+			}
+		}
+	}
+}
+
+int fe_tune_init(struct adapter_s *adapter) {
+	char		fename[128];
 
 	sprintf(fename, "/dev/dvb/adapter%d/frontend0", adapter->no);
 
@@ -394,75 +464,15 @@ static void *tune_thread(void *arg) {
 		exit(-1);
 	}
 
+	/* Single shot - try to tune */
 	fe_tune(adapter);
-	lasttune=time(NULL);
-	laststatus=lasttune;
 
-	/*
-	 * Try to wait for frontend events. Whenever we get one we store it. If the
-	 * we fail to have the status FE_HAS_LOCK we try to retune every 5 seconds
-	 *
-	 */
-	while(42) {
-		pfd.fd = adapter->fefd;
-		pfd.events = POLLIN;
+	/* Watch the filedescriptor for frontend events */
+	event_set(&adapter->feevent, adapter->fefd, EV_READ|EV_PERSIST, fe_event, adapter);
+	event_add(&adapter->feevent, NULL);
 
-		res=poll(&pfd, 1, 1000);
-
-		/* On error - retry */	
-		if (res < 0)
-			continue;
-
-		now=time(NULL);
-
-		/* If we dont get an event within the adapter->statinterval we poll the fe */
-		if (res == 0 && now-laststatus > adapter->statinterval) {
-			res=ioctl(adapter->fefd, FE_READ_STATUS, &gstatus);
-
-			laststatus=now;
-
-			if (res == 0) {
-				status=gstatus;
-				logwrite(LOG_INFO, "fe: Adapter %d Status: 0x%02x (%s)",
-						adapter->no, status, fe_decode_status(status));
-				fe_monitor(adapter);
-			}
-
-			continue;
-		}
-
-		if ((res > 0) && (pfd.revents & POLLIN)) {
-
-			res=ioctl(adapter->fefd, FE_GET_EVENT, &event);
-
-			if (res < 0 && errno != EOVERFLOW) {
-				logwrite(LOG_ERROR, "fe: Adapter %d Status event overflow %d",
-						adapter->no, errno);
-				continue;
-			}
-
-			if (res >= 0 && event.status) {
-				if (!(event.status & FE_TIMEDOUT)) {
-					status=event.status;
-					logwrite(LOG_INFO, "fe: Adapter %d Status: 0x%02x (%s)",
-						adapter->no, status, fe_decode_status(status));
-				}
-			}
-
-			continue;
-		}
-
-		if (!(status & FE_HAS_LOCK) && (now-lasttune > RETUNE_INTERVAL)) {
-			fe_tune(adapter);
-			lasttune=now;
-		}
-	}
-}
-
-int fe_tune_init(struct adapter_s *adapter) {
-	pthread_t	gt;
-
-	pthread_create(&gt, NULL, tune_thread, (void *) adapter);
+	/* Create a timer to regular poll the status */
+	fe_timer_init(adapter);
 
 	return 0;
 }

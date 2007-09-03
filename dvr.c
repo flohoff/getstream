@@ -143,7 +143,14 @@ static void dvr_read(int fd, short event, void *arg) {
 	do {
 		len=read(fd, db, adapter->dvrbufsize*TS_PACKET_SIZE);
 
-		adapter->reads++;
+		/*
+		 * Increase readcounter - we need to detect flexcop not delivering
+		 * TS packets anymore e.g. the IRQ Stop bug. A timer will then
+		 * try to issue a frontend tune which will hopefully reset the
+		 * card to deliver packets
+		 *
+		 */
+		adapter->dvrreads++;
 
 		/* EOF aka no more TS Packets ? */
 		if (len == 0)
@@ -155,14 +162,7 @@ static void dvr_read(int fd, short event, void *arg) {
 				logwrite(LOG_ERROR, "demux: read in dvr_read returned with errno %d", errno);
 			break;
 		}
-#if 0
-		/* Never ever happened so we remove this - its the hot path */
-		/* We should only get n*TS_PACKET_SIZE */
-		if (len % TS_PACKET_SIZE != 0) {
-			logwrite(LOG_ERROR, "demux: Oops - unaligned read of %d bytes dropping buffer", len);
-			continue;
-		}
-#endif
+
 		/* Loop on TS packets and fill them into dvr_input_ts */
 		for(i=0;i<len;i+=TS_PACKET_SIZE) {
 			dvr_input_ts(adapter, &db[i]);
@@ -172,7 +172,7 @@ static void dvr_read(int fd, short event, void *arg) {
 }
 
 
-void dvr_init_stat_timer(struct adapter_s *a);
+static void dvr_init_stat_timer(struct adapter_s *a);
 
 #define DVR_STAT_INTERVAL	60
 
@@ -188,21 +188,19 @@ static void dvr_stat_timer(int fd, short event, void *arg) {
 		}
 	}
 
-	logwrite(LOG_INFO, "dvr: inputstats: %d pids %u pkt/s %u byte/s %u read/s",
+	logwrite(LOG_INFO, "dvr: inputstats: %d pids %u pkt/s %u byte/s",
 				pids,
 				total/a->statinterval,
-				total*TS_PACKET_SIZE/a->statinterval,
-				a->reads/a->statinterval);
+				total*TS_PACKET_SIZE/a->statinterval);
 
 	for(i=0;i<PID_MAX;i++) {
 		a->pidtable[i].packets=0;
 	}
-	a->reads=0;
 
 	dvr_init_stat_timer(a);
 }
 
-void dvr_init_stat_timer(struct adapter_s *a) {
+static void dvr_init_stat_timer(struct adapter_s *a) {
 	struct timeval	tv;
 
 	if (!a->statinterval)
@@ -216,6 +214,43 @@ void dvr_init_stat_timer(struct adapter_s *a) {
 	evtimer_set(&a->statevent, dvr_stat_timer, a);
 	evtimer_add(&a->statevent, &tv);
 }
+
+static void dvr_flexcop_init(struct adapter_s *a);
+
+static void dvr_flexcop_timer(int fd, short event, void *arg) {
+	struct adapter_s	*adapter=arg;
+	/*
+	 * Flexcop is known to randomly lockup. A workaround in the kernel
+	 * driver is to reset some registers known to reanimate the flexcop.
+	 *
+	 * See: http://lkml.org/lkml/2005/6/27/135
+	 *
+	 * The patch went into 2.6.13-rc3 so in case you are running an FlexCop based
+	 * card (SkyStar2, AirStar) you better upgrade to 2.6.13 or better.
+	 *
+	 * Debouncing of tuneing is done in fe_retune()
+	 *
+	 */
+	if (adapter->dvrreads == 0) {
+		logwrite(LOG_ERROR, "dvr: lockup of DVB card detected - trying to reanimate via tuning");
+		fe_retune(adapter);
+	}
+
+	adapter->dvrreads=0;
+
+	dvr_flexcop_init(adapter);
+}
+
+static void dvr_flexcop_init(struct adapter_s *a) {
+	struct timeval	tv;
+
+	tv.tv_sec=5;
+	tv.tv_usec=0;
+
+	evtimer_set(&a->dvrflexcoptimer, dvr_flexcop_timer, a);
+	evtimer_add(&a->dvrflexcoptimer, &tv);
+}
+
 
 int dvr_init(struct adapter_s *a) {
 	int			dvrfd;
@@ -240,6 +275,7 @@ int dvr_init(struct adapter_s *a) {
 	a->dvrfd=dvrfd;
 
 	dvr_init_stat_timer(a);
+	dvr_flexcop_init(a);
 
 	return 1;
 }
