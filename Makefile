@@ -20,7 +20,7 @@ getstream: $(OBJ-getstream)
 	gcc $(LDFLAGS) -o $@ $+
 
 clean:
-	-rm -f $(OBJ-getstream) $(OBJ-streamdecode)
+	-rm -f $(OBJ-getstream) $(OBJ-tsdecode)
 	-rm -f getstream tsdecode 
 	-rm -f core vgcore.pid* core.* gmon.out
 
