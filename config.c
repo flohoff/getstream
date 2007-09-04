@@ -31,7 +31,7 @@ static int cf_adapter_start(struct lc_centry *ce, struct lc_value *val) {
 	adapter=calloc(1, sizeof(struct adapter_s));
 	adapter->no=val->num;
 	adapter->budgetmode=1;
-	adapter->dvrbufsize=DVR_BUFFER_DEFAULT*TS_PACKET_SIZE;
+	adapter->dvr.buffer.size=DVR_BUFFER_DEFAULT*TS_PACKET_SIZE;
 	config->adapter=g_list_append(config->adapter, adapter);
 	return 1;
 }
@@ -240,13 +240,13 @@ static struct lc_ventry conf_stream[] = {
 };
 
 static int cf_dvbs_trans_freq(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbs.t_freq=val->num; return 1; }
+	{ adapter->fe.dvbs.t_freq=val->num; return 1; }
 static int cf_dvbs_trans_pol(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbs.t_pol=val->string; return 1; }
+	{ adapter->fe.dvbs.t_pol=val->string; return 1; }
 static int cf_dvbs_trans_srate(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbs.t_srate=val->num; return 1; }
+	{ adapter->fe.dvbs.t_srate=val->num; return 1; }
 static int cf_dvbs_trans_diseqc(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbs.t_diseqc=val->num; return 1; }
+	{ adapter->fe.dvbs.t_diseqc=val->num; return 1; }
 
 static struct lc_ventry conf_dvbs_transponder[] = {
 	{ "frequency", 1, 1, LCV_NUM, 0, NULL, cf_dvbs_trans_freq },
@@ -257,11 +257,11 @@ static struct lc_ventry conf_dvbs_transponder[] = {
 };
 
 static int cf_dvbs_lnb_lof1(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbs.lnb_lof1=val->num; return 1; }
+	{ adapter->fe.dvbs.lnb_lof1=val->num; return 1; }
 static int cf_dvbs_lnb_lof2(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbs.lnb_lof2=val->num; return 1; }
+	{ adapter->fe.dvbs.lnb_lof2=val->num; return 1; }
 static int cf_dvbs_lnb_slof(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbs.lnb_slof=val->num; return 1; }
+	{ adapter->fe.dvbs.lnb_slof=val->num; return 1; }
 
 static struct lc_ventry conf_dvbs_lnb[] = {
 	{ "lof1", 1, 1, LCV_NUM, 0, NULL, cf_dvbs_lnb_lof1 },
@@ -278,7 +278,7 @@ static struct lc_ventry conf_dvbs[] = {
 
 static int cf_dvbt_bandwidth(struct lc_centry *ce, struct lc_value *val) {
 	if (strcasecmp("auto", val->string) == 0) {
-		adapter->dvbt.bandwidth=0;
+		adapter->fe.dvbt.bandwidth=0;
 	} else {
 		int	bw=strtol(val->string, NULL, 10);
 		if (bw != 6 && bw != 7 && bw != 8) {
@@ -286,17 +286,17 @@ static int cf_dvbt_bandwidth(struct lc_centry *ce, struct lc_value *val) {
 					val->string, ce->vline);
 			return 0;
 		}
-		adapter->dvbt.bandwidth=bw;
+		adapter->fe.dvbt.bandwidth=bw;
 	}
 	return 1;
 }
 
 static int cf_dvbt_freq(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbt.freq=val->num; return 1; }
+	{ adapter->fe.dvbt.freq=val->num; return 1; }
 
 static int cf_dvbt_tmode(struct lc_centry *ce, struct lc_value *val) {
 	if (strcasecmp("auto", val->string) == 0) {
-		adapter->dvbt.tmode=0;
+		adapter->fe.dvbt.tmode=0;
 	} else {
 		int	t=strtol(val->string, NULL, 10);
 		if (t != 2 && t != 8) {
@@ -304,14 +304,14 @@ static int cf_dvbt_tmode(struct lc_centry *ce, struct lc_value *val) {
 					val->string, ce->vline);
 			return 0;
 		}
-		adapter->dvbt.tmode=t;
+		adapter->fe.dvbt.tmode=t;
 	}
 	return 1;
 }
 
 static int cf_dvbt_modulation(struct lc_centry *ce, struct lc_value *val) {
 	if (strcasecmp("auto", val->string) == 0) {
-		adapter->dvbt.modulation=0;
+		adapter->fe.dvbt.modulation=0;
 	} else {
 		int	m=strtol(val->string, NULL, 10);
 		if (m != 16 && m != 32 && m != 64 && m != 128 && m != 256) {
@@ -319,14 +319,14 @@ static int cf_dvbt_modulation(struct lc_centry *ce, struct lc_value *val) {
 					val->string, ce->vline);
 			return 0;
 		}
-		adapter->dvbt.modulation=m;
+		adapter->fe.dvbt.modulation=m;
 	}
 	return 1;
 }
 
 static int cf_dvbt_guard(struct lc_centry *ce, struct lc_value *val) {
 	if (strcasecmp("auto", val->string) == 0) {
-		adapter->dvbt.guard=0;
+		adapter->fe.dvbt.guard=0;
 	} else {
 		int	gi=strtol(val->string, NULL, 10);
 		if (gi != 4 && gi != 8 && gi != 16 && gi != 32) {
@@ -334,16 +334,16 @@ static int cf_dvbt_guard(struct lc_centry *ce, struct lc_value *val) {
 					val->string, ce->vline);
 			return 0;
 		}
-		adapter->dvbt.guard=gi;
+		adapter->fe.dvbt.guard=gi;
 	}
 	return 1;
 }
 
 static int cf_dvbt_hierarchy(struct lc_centry *ce, struct lc_value *val) {
 	if (strcasecmp("none", val->string) == 0)
-		adapter->dvbt.hierarchy=-1;
+		adapter->fe.dvbt.hierarchy=-1;
 	else if (strcasecmp("auto", val->string) == 0)
-		adapter->dvbt.hierarchy=0;
+		adapter->fe.dvbt.hierarchy=0;
 	else {
 		int	h=strtol(val->string, NULL, 0);
 
@@ -353,7 +353,7 @@ static int cf_dvbt_hierarchy(struct lc_centry *ce, struct lc_value *val) {
 			return 0;
 		}
 
-		adapter->dvbt.hierarchy=h;
+		adapter->fe.dvbt.hierarchy=h;
 	}
 	return 1;
 }
@@ -376,13 +376,13 @@ static int cf_dvbc(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->type=AT_DVBC; return 1; }
 
 static int cf_dvbc_freq(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbc.freq=val->num; return 1; }
+	{ adapter->fe.dvbc.freq=val->num; return 1; }
 static int cf_dvbc_modulation(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbc.modulation=val->num; return 1; }
+	{ adapter->fe.dvbc.modulation=val->num; return 1; }
 static int cf_dvbc_trans_srate(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbc.srate=val->num; return 1; }
+	{ adapter->fe.dvbc.srate=val->num; return 1; }
 static int cf_dvbc_fec(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvbc.fec=val->num; return 1; }
+	{ adapter->fe.dvbc.fec=val->num; return 1; }
 
 static struct lc_ventry conf_dvbc[] = {
 	{ "frequency", 1, 1, LCV_NUM, 0, NULL, cf_dvbc_freq },
@@ -395,9 +395,9 @@ static struct lc_ventry conf_dvbc[] = {
 static int cf_adapter_budget(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->budgetmode=val->num; return 1; }
 static int cf_adapter_packetbuffer(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->dvrbufsize=val->num; return 1; }
+	{ adapter->dvr.buffer.size=val->num; return 1; }
 static int cf_adapter_statinterval(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->statinterval=val->num; return 1; }
+	{ adapter->dvr.stat.interval=val->num; return 1; }
 
 static struct lc_ventry conf_adapter[] = {
 	{ "budget-mode", 0, 1, LCV_BOOL, 0, NULL, cf_adapter_budget },

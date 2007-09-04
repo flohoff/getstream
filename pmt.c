@@ -257,7 +257,7 @@ static struct pmt_s *pmt_parse(struct program_s *prog) {
 		} while((esoff=pmt_next_es(s, esoff)) != 0);
 	}
 
-	logwrite(LOG_DEBUG, "pmt: parse_pmt found %d streams for pnr %04x", es, prog->pnr);
+	logwrite(LOG_DEBUG, "pmt: parse_pmt found %d elementary streams for pnr %04x", es, prog->pnr);
 
 	return pmt;
 }
@@ -414,7 +414,7 @@ void pmt_pidfrompat(struct adapter_s *a, unsigned int pnr, unsigned int pmtpid) 
 
 	if (pmtpid) {
 		/* Add a callback for the new pmt pid */
-		prog->pmtpidcb=dvr_add_pcb(a, pmtpid, PID_PMT, DVRCB_SECTION, pmt_dvr_pmt_cb, prog);
+		prog->pmtpidcb=dvr_add_pcb(a, pmtpid, DVRCB_SECTION, PID_PMT, pmt_dvr_pmt_cb, prog);
 		pmt_prog_join_pid(prog, pmtpid, PID_PMT);
 	} else {
 		/* FIXME - The Program disappeared - we should leave all pids */
@@ -473,6 +473,8 @@ void *pmt_join_pnr(struct adapter_s *a, unsigned int pnr,
 	/* Add callback to this stream to program list */
 	if (prog)
 		pmt_prog_add_cb(prog, callback, arg);
+
+	pat_init(a);
 
 	return prog;
 }

@@ -101,36 +101,37 @@ static int fe_tune_dvbs(struct adapter_s *adapter) {
 
 	memset(&feparams, 0, sizeof(struct dvb_frontend_parameters));
 
-	if (strcasecmp(adapter->dvbs.t_pol, "h") == 0) {
+	if (strcasecmp(adapter->fe.dvbs.t_pol, "h") == 0) {
 		voltage=SEC_VOLTAGE_18;
-	} else if(strcasecmp(adapter->dvbs.t_pol, "v") == 0) {
+	} else if(strcasecmp(adapter->fe.dvbs.t_pol, "v") == 0) {
 		voltage=SEC_VOLTAGE_13;
 	} else {
-		logwrite(LOG_ERROR, "fe: Unknown polarity \"%s\" in dvb-s transponder config", adapter->dvbs.t_pol);
+		logwrite(LOG_ERROR, "fe: Unknown polarity \"%s\" in dvb-s transponder config",
+					adapter->fe.dvbs.t_pol);
 		exit(-1);
 	}
 
-	if (adapter->dvbs.t_freq > 2200000) {
-		if (adapter->dvbs.t_freq < adapter->dvbs.lnb_slof) {
-			feparams.frequency=(adapter->dvbs.t_freq-adapter->dvbs.lnb_lof1);
+	if (adapter->fe.dvbs.t_freq > 2200000) {
+		if (adapter->fe.dvbs.t_freq < adapter->fe.dvbs.lnb_slof) {
+			feparams.frequency=(adapter->fe.dvbs.t_freq-adapter->fe.dvbs.lnb_lof1);
 			tone = SEC_TONE_OFF;
 		} else {
-			feparams.frequency=(adapter->dvbs.t_freq-adapter->dvbs.lnb_lof2);
+			feparams.frequency=(adapter->fe.dvbs.t_freq-adapter->fe.dvbs.lnb_lof2);
 			tone = SEC_TONE_ON;
 		}
 	} else {
-		feparams.frequency=adapter->dvbs.t_freq;
+		feparams.frequency=adapter->fe.dvbs.t_freq;
 	}
 
 	feparams.inversion=INVERSION_AUTO;
-	feparams.u.qpsk.symbol_rate=adapter->dvbs.t_srate;
+	feparams.u.qpsk.symbol_rate=adapter->fe.dvbs.t_srate;
 	feparams.u.qpsk.fec_inner=FEC_AUTO;
 
-	if (adapter->dvbs.t_diseqc) {
+	if (adapter->fe.dvbs.t_diseqc) {
 		for(i=0;i<=1;i++) {
 			logwrite(LOG_DEBUG, "fe: diseqc sending command %d", i);
 
-			if (!head_diseqc(adapter->fefd, adapter->dvbs.t_diseqc-1, voltage, tone)) {
+			if (!head_diseqc(adapter->fe.fd, adapter->fe.dvbs.t_diseqc-1, voltage, tone)) {
 				logwrite(LOG_ERROR, "fe: diseqc failed to send");
 				exit(-1);
 			}
@@ -139,27 +140,27 @@ static int fe_tune_dvbs(struct adapter_s *adapter) {
 			sleep(1);
 		}
 	} else {
-		if (ioctl(adapter->fefd, FE_SET_VOLTAGE, voltage) < 0) {
+		if (ioctl(adapter->fe.fd, FE_SET_VOLTAGE, voltage) < 0) {
 			logwrite(LOG_ERROR, "fe: ioctl FE_SET_VOLTAGE failed");
 		}
 
-		if (ioctl(adapter->fefd, FE_SET_TONE, tone) < 0) {
+		if (ioctl(adapter->fe.fd, FE_SET_TONE, tone) < 0) {
 			logwrite(LOG_ERROR, "fe: ioctl FE_SET_VOLTAGE failed");
 		}
 	}
 
 	logwrite(LOG_INFO, "fe: DVB-S tone = %d", tone);
-	logwrite(LOG_INFO, "fe: DVB-S diseqc = %d", adapter->dvbs.t_diseqc);
-	logwrite(LOG_INFO, "fe: DVB-S freq = %lu", adapter->dvbs.t_freq);
-	logwrite(LOG_INFO, "fe: DVB-S lof1 = %lu", adapter->dvbs.lnb_lof1);
-	logwrite(LOG_INFO, "fe: DVB-S lof2 = %lu", adapter->dvbs.lnb_lof2);
-	logwrite(LOG_INFO, "fe: DVB-S slof = %lu", adapter->dvbs.lnb_slof);
+	logwrite(LOG_INFO, "fe: DVB-S diseqc = %d", adapter->fe.dvbs.t_diseqc);
+	logwrite(LOG_INFO, "fe: DVB-S freq = %lu", adapter->fe.dvbs.t_freq);
+	logwrite(LOG_INFO, "fe: DVB-S lof1 = %lu", adapter->fe.dvbs.lnb_lof1);
+	logwrite(LOG_INFO, "fe: DVB-S lof2 = %lu", adapter->fe.dvbs.lnb_lof2);
+	logwrite(LOG_INFO, "fe: DVB-S slof = %lu", adapter->fe.dvbs.lnb_slof);
 	logwrite(LOG_INFO, "fe: DVB-S feparams.frequency = %d", feparams.frequency);
 	logwrite(LOG_INFO, "fe: DVB-S feparams.inversion = %d", feparams.inversion);
 	logwrite(LOG_INFO, "fe: DVB-S feparams.u.qpsk.symbol_rate = %d", feparams.u.qpsk.symbol_rate);
 	logwrite(LOG_INFO, "fe: DVB-S feparams.u.qpsk.fec_inner = %d", feparams.u.qpsk.fec_inner);
 
-	if (ioctl(adapter->fefd, FE_SET_FRONTEND, &feparams) < 0) {
+	if (ioctl(adapter->fe.fd, FE_SET_FRONTEND, &feparams) < 0) {
 		logwrite(LOG_ERROR, "fe: ioctl FE_SET_FRONTEND failed");
 		exit(-1);
 	}
@@ -173,9 +174,9 @@ int fe_tune_dvbt(struct adapter_s *adapter) {
 	memset(&feparams, 0, sizeof(struct dvb_frontend_parameters));
 
 	feparams.inversion = INVERSION_AUTO;
-	feparams.frequency = adapter->dvbt.freq;
+	feparams.frequency = adapter->fe.dvbt.freq;
 
-	switch(adapter->dvbt.bandwidth) {
+	switch(adapter->fe.dvbt.bandwidth) {
 		case(0):
 			feparams.u.ofdm.bandwidth=BANDWIDTH_AUTO;
 			break;
@@ -189,14 +190,14 @@ int fe_tune_dvbt(struct adapter_s *adapter) {
 			feparams.u.ofdm.bandwidth=BANDWIDTH_8_MHZ;
 			break;
 		default:
-			logwrite(LOG_ERROR, "fe: Unknown DVB-T bandwidth %d", adapter->dvbt.bandwidth);
+			logwrite(LOG_ERROR, "fe: Unknown DVB-T bandwidth %d", adapter->fe.dvbt.bandwidth);
 			exit(-1);
 	}
 
 	feparams.u.ofdm.code_rate_HP = FEC_AUTO;
 	feparams.u.ofdm.code_rate_LP = FEC_AUTO;
 
-	switch(adapter->dvbt.modulation) {
+	switch(adapter->fe.dvbt.modulation) {
 		case(0):
 			feparams.u.ofdm.constellation = QAM_AUTO;
 			break;
@@ -216,11 +217,11 @@ int fe_tune_dvbt(struct adapter_s *adapter) {
 			feparams.u.ofdm.constellation = QAM_256;
 			break;
 		default:
-			logwrite(LOG_ERROR, "fe: Unknown DVB-T modulation %d", adapter->dvbt.modulation);
+			logwrite(LOG_ERROR, "fe: Unknown DVB-T modulation %d", adapter->fe.dvbt.modulation);
 			exit(-1);
 	}
 
-	switch(adapter->dvbt.tmode) {
+	switch(adapter->fe.dvbt.tmode) {
 		case(0):
 			feparams.u.ofdm.transmission_mode = TRANSMISSION_MODE_AUTO;
 			break;
@@ -231,11 +232,11 @@ int fe_tune_dvbt(struct adapter_s *adapter) {
 			feparams.u.ofdm.transmission_mode = TRANSMISSION_MODE_8K;
 			break;
 		default:
-			logwrite(LOG_ERROR, "fe: Unknown DVB-T transmission mode %d", adapter->dvbt.tmode);
+			logwrite(LOG_ERROR, "fe: Unknown DVB-T transmission mode %d", adapter->fe.dvbt.tmode);
 			exit(-1);
 	}
 
-	switch(adapter->dvbt.guard) {
+	switch(adapter->fe.dvbt.guard) {
 		case(0):
 			feparams.u.ofdm.guard_interval = GUARD_INTERVAL_AUTO;
 			break;
@@ -252,12 +253,12 @@ int fe_tune_dvbt(struct adapter_s *adapter) {
 			feparams.u.ofdm.guard_interval = GUARD_INTERVAL_1_32;
 			break;
 		default:
-			logwrite(LOG_ERROR, "fe: Unknown DVB-T guard interval %d", adapter->dvbt.guard);
+			logwrite(LOG_ERROR, "fe: Unknown DVB-T guard interval %d", adapter->fe.dvbt.guard);
 			exit(-1);
 	}
 
 
-	switch(adapter->dvbt.hierarchy) {
+	switch(adapter->fe.dvbt.hierarchy) {
 		case(-1):
 			feparams.u.ofdm.hierarchy_information = HIERARCHY_NONE;
 			break;
@@ -274,11 +275,11 @@ int fe_tune_dvbt(struct adapter_s *adapter) {
 			feparams.u.ofdm.hierarchy_information = HIERARCHY_4;
 			break;
 		default:
-			logwrite(LOG_ERROR, "fe: Unknown DVB-T hierarchy %d", adapter->dvbt.hierarchy);
+			logwrite(LOG_ERROR, "fe: Unknown DVB-T hierarchy %d", adapter->fe.dvbt.hierarchy);
 			exit(-1);
 	}
 
-	if (ioctl(adapter->fefd, FE_SET_FRONTEND, &feparams) < 0) {
+	if (ioctl(adapter->fe.fd, FE_SET_FRONTEND, &feparams) < 0) {
 		logwrite(LOG_ERROR, "ioctl FE_SET_FRONTEND failed");
 		exit(-1);
 	}
@@ -291,10 +292,10 @@ static int fe_tune_dvbc(struct adapter_s *adapter) {
 
 	memset(&feparams, 0, sizeof(struct dvb_frontend_parameters));
 
-	feparams.frequency = adapter->dvbc.freq;
+	feparams.frequency = adapter->fe.dvbc.freq;
 	feparams.inversion=INVERSION_AUTO;
-	feparams.u.qam.symbol_rate = adapter->dvbc.srate;
-	switch(adapter->dvbc.modulation) {
+	feparams.u.qam.symbol_rate = adapter->fe.dvbc.srate;
+	switch(adapter->fe.dvbc.modulation) {
 		case -1: feparams.u.qam.modulation = QPSK; break;
 		case 0: feparams.u.qam.modulation = QAM_AUTO; break;
 		case 16: feparams.u.qam.modulation = QAM_16; break;
@@ -303,10 +304,10 @@ static int fe_tune_dvbc(struct adapter_s *adapter) {
 		case 128: feparams.u.qam.modulation = QAM_128; break;
 		case 256: feparams.u.qam.modulation = QAM_256; break;
 		default:
-			logwrite(LOG_ERROR, "Unknown modulation %d", adapter->dvbc.modulation);
+			logwrite(LOG_ERROR, "Unknown modulation %d", adapter->fe.dvbc.modulation);
 			exit(-1);
 	}
-	switch(adapter->dvbc.fec) {
+	switch(adapter->fe.dvbc.fec) {
 		case 0: feparams.u.qam.fec_inner = FEC_NONE; break;
 		case 1: feparams.u.qam.fec_inner = FEC_1_2; break;
 		case 2: feparams.u.qam.fec_inner = FEC_2_3; break;
@@ -318,11 +319,11 @@ static int fe_tune_dvbc(struct adapter_s *adapter) {
 		case 8: feparams.u.qam.fec_inner = FEC_8_9; break;
 		case 9: feparams.u.qam.fec_inner = FEC_AUTO; break;
 		default:
-			logwrite(LOG_ERROR, "Unknown fec %d", adapter->dvbc.fec);
+			logwrite(LOG_ERROR, "Unknown fec %d", adapter->fe.dvbc.fec);
 			exit(-1);
 	}
 
-	if (ioctl(adapter->fefd, FE_SET_FRONTEND, &feparams) < 0) {
+	if (ioctl(adapter->fe.fd, FE_SET_FRONTEND, &feparams) < 0) {
 		logwrite(LOG_ERROR, "ioctl FE_SET_FRONTEND failed");
 		exit(-1);
 	}
@@ -368,7 +369,7 @@ static int fe_tune(struct adapter_s *adapter) {
 			break;
 	}
 
-	adapter->fetunelast=time(NULL);
+	adapter->fe.tunelast=time(NULL);
 
 	return 0;
 }
@@ -382,7 +383,7 @@ void fe_retune(struct adapter_s *adapter) {
 	now=time(NULL);
 
 	/* Debounce the retuning */
-	if (adapter->fetunelast + FE_TUNE_MINDELAY > now)
+	if (adapter->fe.tunelast + FE_TUNE_MINDELAY > now)
 		return;
 
 	fe_tune(adapter);
@@ -395,7 +396,7 @@ static void fe_check_status(int fd, short event, void *arg) {
 	fe_status_t		status;
 	int			res;
 
-	res=ioctl(adapter->fefd, FE_READ_STATUS, &status);
+	res=ioctl(adapter->fe.fd, FE_READ_STATUS, &status);
 
 	if (res == 0) {
 		if (!(status & FE_HAS_LOCK)) {
@@ -416,8 +417,8 @@ static void fe_timer_init(struct adapter_s *adapter) {
 	tv.tv_sec=FE_CHECKSTATUS_INTERVAL;
 	tv.tv_usec=0;
 
-	evtimer_set(&adapter->fetimer, fe_check_status, adapter);
-	evtimer_add(&adapter->fetimer, &tv);
+	evtimer_set(&adapter->fe.timer, fe_check_status, adapter);
+	evtimer_add(&adapter->fe.timer, &tv);
 }
 
 /*
@@ -430,7 +431,7 @@ static void fe_event(int fd, short ev, void *arg) {
 	int				res, status;
 	struct dvb_frontend_event	event;
 
-	res=ioctl(adapter->fefd, FE_GET_EVENT, &event);
+	res=ioctl(adapter->fe.fd, FE_GET_EVENT, &event);
 
 	if (res < 0 && errno != EOVERFLOW) {
 		logwrite(LOG_ERROR, "fe: Adapter %d Status event overflow %d",
@@ -457,9 +458,9 @@ int fe_tune_init(struct adapter_s *adapter) {
 
 	sprintf(fename, "/dev/dvb/adapter%d/frontend0", adapter->no);
 
-	adapter->fefd=open(fename, O_RDWR|O_NONBLOCK);
+	adapter->fe.fd=open(fename, O_RDWR|O_NONBLOCK);
 
-	if (!adapter->fefd) {
+	if (!adapter->fe.fd) {
 		logwrite(LOG_ERROR, "Error opening dvb frontend %s", fename);
 		exit(-1);
 	}
@@ -468,8 +469,8 @@ int fe_tune_init(struct adapter_s *adapter) {
 	fe_tune(adapter);
 
 	/* Watch the filedescriptor for frontend events */
-	event_set(&adapter->feevent, adapter->fefd, EV_READ|EV_PERSIST, fe_event, adapter);
-	event_add(&adapter->feevent, NULL);
+	event_set(&adapter->fe.event, adapter->fe.fd, EV_READ|EV_PERSIST, fe_event, adapter);
+	event_add(&adapter->fe.event, NULL);
 
 	/* Create a timer to regular poll the status */
 	fe_timer_init(adapter);

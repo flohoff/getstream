@@ -38,6 +38,7 @@ extern int loglevel;
 
 enum {
 	PID_NONE,
+	PID_PAT,
 	PID_PMT,
 	PID_PCR,
 	PID_VIDEO,
@@ -101,75 +102,90 @@ enum {
 };
 
 struct adapter_s {
-	int				no;		/* Adapter Number */
-	int				type;		/* Adapter Type - DVB-S/DVB-T/DVB-C */
+	int			no;		/* Adapter Number */
+	int			type;		/* Adapter Type - DVB-S/DVB-T/DVB-C */
 
-	int				budgetmode;
-
-	/* fe.c */
-	int			fefd;
-	struct event		fetimer;
-	struct event		feevent;
-	time_t			fetunelast;
-
-	struct {					/* Tuning information DVB-S */
-		unsigned long	lnb_lof1;
-		unsigned long	lnb_lof2;
-		unsigned long	lnb_slof;
-
-		unsigned long	t_freq;
-		char		*t_pol;
-		unsigned long	t_srate;
-		int		t_diseqc;
-	} dvbs;
-
-	struct {					/* Tuning information DVB-T */
-		unsigned long	freq;
-		int		bandwidth;		/* 0 (Auto) 6 (6Mhz), 7 (7Mhz), 8 (8Mhz) */
-		int		tmode;			/* 0 (Auto) 2 (2Khz), 8 (8Khz) */
-		int		modulation;		/* 0, 16, 32, 64, 128, 256 QUAM */
-		int		guard;			/* 0, 4, 8, 16, 32 1/x Guard */
-		int		hierarchy;		/* 0, -1, 1, 2, 4 - 0 Auto, -1 None */
-	} dvbt;
-
-	struct {					/* Tuning information DVB-C */
-		unsigned long	freq;
-		unsigned long	srate;
-		int		modulation;		/* -1 (QPSK), 0, 16, 32, 64, 128, 256 QAM  */
-		int		fec;			/* 0 (Auto) - 9 */
-	} dvbc;
-
+	int			budgetmode;
 	GList			*streams;
 
+	/* fe.c */
+	struct {
+		int			fd;
+		struct event		timer;
+		struct event		event;
+		time_t			tunelast;
+
+		union {
+			struct {					/* Tuning information DVB-S */
+				unsigned long	lnb_lof1;
+				unsigned long	lnb_lof2;
+				unsigned long	lnb_slof;
+
+				unsigned long	t_freq;
+				char		*t_pol;
+				unsigned long	t_srate;
+				int		t_diseqc;
+			} dvbs;
+
+			struct {					/* Tuning information DVB-T */
+				unsigned long	freq;
+				int		bandwidth;		/* 0 (Auto) 6 (6Mhz), 7 (7Mhz), 8 (8Mhz) */
+				int		tmode;			/* 0 (Auto) 2 (2Khz), 8 (8Khz) */
+				int		modulation;		/* 0, 16, 32, 64, 128, 256 QUAM */
+				int		guard;			/* 0, 4, 8, 16, 32 1/x Guard */
+				int		hierarchy;		/* 0, -1, 1, 2, 4 - 0 Auto, -1 None */
+			} dvbt;
+
+			struct {					/* Tuning information DVB-C */
+				unsigned long	freq;
+				unsigned long	srate;
+				int		modulation;		/* -1 (QPSK), 0, 16, 32, 64, 128, 256 QAM  */
+				int		fec;			/* 0 (Auto) - 9 */
+			} dvbc;
+		};
+	} fe;
+
 	/* dvr */
-	int			dvrfd;
-	struct event		dvrevent;
-	struct event		dvrflexcoptimer;
-	time_t			lastinput;
+	struct {
+		int			fd;
+		struct event		dvrevent;
+		struct event		stucktimer;
+		time_t			lastinput;
+
+		struct {
+			GList		*callback;
+			unsigned long	packets;
+			struct psisec_s	*section;
+			unsigned int	secuser;
+		} pidtable[PID_MAX+1];
+
+		struct {
+			int		size;		/* Config option */
+			uint8_t		*ptr;
+		} buffer;
+
+		uint8_t			pidcc[PID_MAX+1];
+
+		struct {
+			unsigned int		reads;		/* Reads in the stats interval */
+			int			interval;	/* Config option */
+			time_t			last;
+			struct event		event;
+		} stat;
+	} dvr;
 
 	struct {
-		GList		*callback;
-		unsigned long	packets;
-		struct psisec_s	*section;
-		unsigned int	secuser;
-	} pidtable[PID_MAX+1];
-
-	int			dvrbufsize;		/* Config option */
-	uint8_t			*dvrbuf;
-	unsigned int		dvrreads;		/* Reads in the stats interval */
-	uint8_t			pidcc[PID_MAX+1];
-
-	int			statinterval;		/* Config option */
-	time_t			statlast;
-	struct event		statevent;
-
-	/* dmx */
-	int			dmxfd[PID_MAX+1];
-	struct event		dmxevent;
-
+		struct event		dmxevent;
+		/* dmx */
+		struct {
+			int	fd;
+			int	type;
+		} pidtable[PID_MAX+1+1];			/* Space for 0x2000 pid structures */
+	} dmx;
 
 	/* PAT */
 	struct {
+		void		*cbc;
 		struct psi_s	psi;
 		struct pat_s	*last;
 		struct pat_s	*current;
@@ -277,6 +293,7 @@ void dvr_del_pcb(struct adapter_s *a, unsigned int pid, void *cbs);
 int dmx_init(struct adapter_s *adapter);
 int dmx_join_pid(struct adapter_s *a, unsigned int pid, int type);
 void dmx_leave_pid(struct adapter_s *a, int pid);
+void dmx_bounce_filter(struct adapter_s *adapter);
 
 /*
  *
@@ -289,6 +306,7 @@ void pat_free(struct pat_s *pat);
 struct pat_s *pat_new();
 void pat_add_program(struct pat_s *pat, uint16_t pnr, uint16_t pid);
 unsigned int pat_send(struct pat_s *pat, uint8_t cc, uint8_t version, uint16_t tid, void (*callback)(void *data, void *arg), void *arg);
+void pat_init(struct adapter_s *adapter);
 
 /*
  *

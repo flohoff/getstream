@@ -56,9 +56,9 @@ static int dmx_set_pes_filter(int fd, int pid, int pestype) {
 }
 
 void dmx_leave_pid(struct adapter_s *a, int pid) {
-	if (a->dmxfd[pid] >= 0)
-		close(a->dmxfd[pid]);
-	a->dmxfd[pid]=-1;
+	if (a->dmx.pidtable[pid].fd >= 0)
+		close(a->dmx.pidtable[pid].fd);
+	a->dmx.pidtable[pid].fd=-1;
 	return;
 }
 
@@ -66,11 +66,11 @@ int dmx_join_pid(struct adapter_s *a, unsigned int pid, int type) {
 	int	fd;
 
 	/* Budget mode does not need this */
-	if(a->budgetmode && a->dmxfd[0x2000] >= 0)
+	if(a->budgetmode && a->dmx.pidtable[0x2000].fd >= 0)
 		return 1;
 
 	/* Already joined ? */
-	if (a->dmxfd[pid] >= 0) {
+	if (a->dmx.pidtable[pid].fd >= 0) {
 		logwrite(LOG_ERROR,"dmx: already joined pid %d", pid);
 		return 1;
 	}
@@ -87,34 +87,10 @@ int dmx_join_pid(struct adapter_s *a, unsigned int pid, int type) {
 		return 0;
 	}
 
-	a->dmxfd[pid]=fd;
+	a->dmx.pidtable[pid].fd=fd;
+	a->dmx.pidtable[pid].type=type;
 
 	return 1;
-}
-
-
-/*
- * This will be called for PAT (Programm Association Table)
- * receive on PID 0. We should parse the PAT and fill the pid
- * demux table with the PMT pids pointing to the PMT decoder.
- *
- */
-static void dmx_read(int fd, short event, void *arg) {
-	struct adapter_s	*a=arg;
-	struct psisec_s		section;
-	uint8_t			psi[PSI_MAX_SIZE];
-	int			len;
-
-	len=read(fd, &psi, PSI_MAX_SIZE);
-
-	if (len <= 0)
-		return;
-
-	logwrite(LOG_XTREME, "dmx: Adapter %d got PAT section from dmx device - len %d",
-				a->no, len);
-
-	if (psi_section_fromdata(&section, 0, psi, len) == PSI_RC_OK)
-		pat_section_add(a, &section);
 }
 
 /*
@@ -142,34 +118,45 @@ int demux_set_sct_filter(int fd, int pid,
 	return 0;
 }
 
-int dmx_init(struct adapter_s *adapter) {
-	struct dmx_filter	df;
-	int			dmxfd, i;
+/*
+ * It is known that the flexcop chipset aka SkyStar2/AirStar cards
+ * sometimes stop receiving interrupts. A workaround in the kernel
+ * trys to reset the card in case the number of joined/forwarded
+ * pids gets from 0 to 1 which means we need to drop all filters
+ * and reaquire them. This function is called from dvr.c in case
+ * we see no read avalability on the dvr0 device in 5 seconds.
+ *
+ * We are going up to PID_MAX+1 aka 0x2000 in case we are in budget
+ * mode and just have a single filter.
+ *
+ */
+void dmx_bounce_filter(struct adapter_s *adapter) {
+	int		i;
 
-	/* FIXME Check for open success */
-	dmxfd=open(dmxname(adapter->no), O_RDWR);
+	for(i=0;i<=PID_MAX+1;i++) {
+		if (adapter->dmx.pidtable[i].fd < 0)
+			continue;
 
-	if (dmxfd < 0) {
-		logwrite(LOG_ERROR, "dmx: error opening dmx device %s",
-				dmxname(adapter->no));
-		return 0;
+		close(adapter->dmx.pidtable[i].fd);
 	}
 
-	event_set(&adapter->dmxevent, dmxfd, EV_READ|EV_PERSIST, dmx_read, adapter);
-	event_add(&adapter->dmxevent, NULL);
+	for(i=0;i<=PID_MAX+1;i++) {
+		if (adapter->dmx.pidtable[i].fd < 0)
+			continue;
 
-	memset(&df, 0, sizeof(struct dmx_filter));
+		adapter->dmx.pidtable[i].fd=-1;
 
-	/* Prepare filter - give us section 0x0 aka PAT */
-	df.filter[0]=0x0;
-	df.mask[0]=0xff;
+		dmx_join_pid(adapter, i, adapter->dmx.pidtable[i].type);
+	}
 
-	/* Set filter and immediatly start receiving packets */
-	demux_set_sct_filter(dmxfd, 0, &df, DMX_IMMEDIATE_START|DMX_CHECK_CRC, 0);
+}
+
+int dmx_init(struct adapter_s *adapter) {
+	int		i;
 
 	/* Reset dmxfd fds - Run until 0x2000 as thats the budget mode pid */
 	for(i=0;i<=PID_MAX+1;i++)
-		adapter->dmxfd[i]=-1;
+		adapter->dmx.pidtable[i].fd=-1;
 
 	return 1;
 }

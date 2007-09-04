@@ -254,24 +254,37 @@ static void pat_update(struct adapter_s *a) {
  *	- a static section (need to clone before usage)
  *
  */
-void pat_section_add(struct adapter_s *a, struct psisec_s *section) {
+static void pat_section_cb(void *data, void *arg) {
+	struct psisec_s		*section=data;
+	struct adapter_s	*adapter=arg;
+
 	if (!psi_currentnext(section))
 		return;
 
 	if (psi_tableid(section) != PAT_TABLE_ID)
 		return;
 
-	if (!psi_update_table(&a->pat.psi, section))
+	if (!psi_update_table(&adapter->pat.psi, section))
 		return;
 
-	if (a->pat.last)
-		pat_free(a->pat.last);
+	if (adapter->pat.last)
+		pat_free(adapter->pat.last);
 
-	a->pat.last=a->pat.current;
-	a->pat.current=pat_parse(a);
+	adapter->pat.last=adapter->pat.current;
+	adapter->pat.current=pat_parse(adapter);
 
-	pat_update(a);
+	pat_update(adapter);
 
 	return;
 }
 
+void pat_init(struct adapter_s *adapter) {
+
+	/* Did we already add a callback? */
+	if (adapter->pat.cbc != NULL)
+		return;
+
+	adapter->pat.cbc=dvr_add_pcb(adapter,
+				0, DVRCB_SECTION, PID_PAT,
+				pat_section_cb, adapter);
+}

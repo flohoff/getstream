@@ -20,7 +20,7 @@
 
 #include "getstream.h"
 
-const char       *pidtnames[]={ "None", "PMT", "PCR", "Video", "Audio", "Privat", "User", "Static", "Other" };
+const char       *pidtnames[]={ "None", "PAT", "PMT", "PCR", "Video", "Audio", "Privat", "User", "Static", "Other" };
 
 struct pidcallback_s {
 	void		(*callback)(void *data, void *arg);
@@ -51,30 +51,30 @@ static inline void dvr_input_ts(struct adapter_s *a, uint8_t *ts) {
 
 	pid=ts_pid(ts);
 
-	a->pidtable[pid].packets++;
+	a->dvr.pidtable[pid].packets++;
 
 	/* Does somebody want this pid ? */
-	if (!a->pidtable[pid].callback)
+	if (!a->dvr.pidtable[pid].callback)
 		return;
 
 	/* FIXME This is ugly to have the same list with different users */
-	if (a->pidtable[pid].secuser) {
+	if (a->dvr.pidtable[pid].secuser) {
 		int	off=0;
 		while(1) {
-			off=psi_reassemble(a->pidtable[pid].section, ts, off);
+			off=psi_reassemble(a->dvr.pidtable[pid].section, ts, off);
 
 			if (off<0)
 				break;
 
-			for(pcbl=g_list_first(a->pidtable[pid].callback);pcbl!=NULL;pcbl=g_list_next(pcbl)) {
+			for(pcbl=g_list_first(a->dvr.pidtable[pid].callback);pcbl!=NULL;pcbl=g_list_next(pcbl)) {
 				struct pidcallback_s	*pcb=pcbl->data;
 				if (pcb->type == DVRCB_SECTION)
-					pcb->callback(a->pidtable[pid].section, pcb->arg);
+					pcb->callback(a->dvr.pidtable[pid].section, pcb->arg);
 			}
 		}
 	}
 
-	for(pcbl=g_list_first(a->pidtable[pid].callback);pcbl!=NULL;pcbl=g_list_next(pcbl)) {
+	for(pcbl=g_list_first(a->dvr.pidtable[pid].callback);pcbl!=NULL;pcbl=g_list_next(pcbl)) {
 		struct pidcallback_s	*pcb=pcbl->data;
 		if (pcb->type == DVRCB_TS)
 			pcb->callback(ts, pcb->arg);
@@ -87,17 +87,17 @@ void dvr_del_pcb(struct adapter_s *a, unsigned int pid, void *vpcb) {
 	logwrite(LOG_DEBUG, "dvr: Del callback for PID %4d (0x%04x) type %d (%s)",
 			pid, pid, pcb->pidt, pidtnames[pcb->pidt]);
 
-	a->pidtable[pid].callback=g_list_remove(a->pidtable[pid].callback, pcb);
+	a->dvr.pidtable[pid].callback=g_list_remove(a->dvr.pidtable[pid].callback, pcb);
 
 	if (pcb->type == DVRCB_SECTION) {
-		a->pidtable[pid].secuser--;
-		if (!a->pidtable[pid].secuser)
-			psi_section_free(a->pidtable[pid].section);
+		a->dvr.pidtable[pid].secuser--;
+		if (!a->dvr.pidtable[pid].secuser)
+			psi_section_free(a->dvr.pidtable[pid].section);
 	}
 
 	free(pcb);
 
-	if (!a->pidtable[pid].callback)
+	if (!a->dvr.pidtable[pid].callback)
 		dmx_leave_pid(a, pid);
 }
 
@@ -118,15 +118,15 @@ void *dvr_add_pcb(struct adapter_s *a, unsigned int pid, unsigned int type,
 	pcb->type=type;
 
 	if (type == DVRCB_SECTION) {
-		a->pidtable[pid].secuser++;
-		if (!a->pidtable[pid].section)
-			a->pidtable[pid].section=psi_section_new();
+		a->dvr.pidtable[pid].secuser++;
+		if (!a->dvr.pidtable[pid].section)
+			a->dvr.pidtable[pid].section=psi_section_new();
 	}
 
-	if (!a->pidtable[pid].callback)
+	if (!a->dvr.pidtable[pid].callback)
 		dmx_join_pid(a, pid, DMX_PES_OTHER);
 
-	a->pidtable[pid].callback=g_list_append(a->pidtable[pid].callback, pcb);
+	a->dvr.pidtable[pid].callback=g_list_append(a->dvr.pidtable[pid].callback, pcb);
 
 	return pcb;
 }
@@ -138,10 +138,10 @@ void *dvr_add_pcb(struct adapter_s *a, unsigned int pid, unsigned int type,
 static void dvr_read(int fd, short event, void *arg) {
 	int			len, i;
 	struct adapter_s	*adapter=arg;
-	uint8_t			*db=adapter->dvrbuf;
+	uint8_t			*db=adapter->dvr.buffer.ptr;
 
 	do {
-		len=read(fd, db, adapter->dvrbufsize*TS_PACKET_SIZE);
+		len=read(fd, db, adapter->dvr.buffer.size*TS_PACKET_SIZE);
 
 		/*
 		 * Increase readcounter - we need to detect flexcop not delivering
@@ -150,7 +150,7 @@ static void dvr_read(int fd, short event, void *arg) {
 		 * card to deliver packets
 		 *
 		 */
-		adapter->dvrreads++;
+		//adapter->dvr.stat.reads++;
 
 		/* EOF aka no more TS Packets ? */
 		if (len == 0)
@@ -168,7 +168,7 @@ static void dvr_read(int fd, short event, void *arg) {
 			dvr_input_ts(adapter, &db[i]);
 		}
 
-	} while (len == adapter->dvrbufsize*TS_PACKET_SIZE);
+	} while (len == adapter->dvr.buffer.size*TS_PACKET_SIZE);
 }
 
 
@@ -182,19 +182,19 @@ static void dvr_stat_timer(int fd, short event, void *arg) {
 	unsigned long		total=0, pids=0;
 
 	for(i=0;i<PID_MAX;i++) {
-		if (a->pidtable[i].packets) {
+		if (a->dvr.pidtable[i].packets) {
 			pids++;
-			total+=a->pidtable[i].packets;
+			total+=a->dvr.pidtable[i].packets;
 		}
 	}
 
 	logwrite(LOG_INFO, "dvr: inputstats: %d pids %u pkt/s %u byte/s",
 				pids,
-				total/a->statinterval,
-				total*TS_PACKET_SIZE/a->statinterval);
+				total/a->dvr.stat.interval,
+				total*TS_PACKET_SIZE/a->dvr.stat.interval);
 
 	for(i=0;i<PID_MAX;i++) {
-		a->pidtable[i].packets=0;
+		a->dvr.pidtable[i].packets=0;
 	}
 
 	dvr_init_stat_timer(a);
@@ -203,21 +203,21 @@ static void dvr_stat_timer(int fd, short event, void *arg) {
 static void dvr_init_stat_timer(struct adapter_s *a) {
 	struct timeval	tv;
 
-	if (!a->statinterval)
+	if (!a->dvr.stat.interval)
 		return;
 
-	a->statlast=time(NULL);
+	a->dvr.stat.last=time(NULL);
 
-	tv.tv_sec=a->statinterval;
+	tv.tv_sec=a->dvr.stat.interval;
 	tv.tv_usec=0;
 
-	evtimer_set(&a->statevent, dvr_stat_timer, a);
-	evtimer_add(&a->statevent, &tv);
+	evtimer_set(&a->dvr.stat.event, dvr_stat_timer, a);
+	evtimer_add(&a->dvr.stat.event, &tv);
 }
 
-static void dvr_flexcop_init(struct adapter_s *a);
+static void dvr_stuck_init(struct adapter_s *a);
 
-static void dvr_flexcop_timer(int fd, short event, void *arg) {
+static void dvr_stuck_timer(int fd, short event, void *arg) {
 	struct adapter_s	*adapter=arg;
 	/*
 	 * Flexcop is known to randomly lockup. A workaround in the kernel
@@ -228,42 +228,44 @@ static void dvr_flexcop_timer(int fd, short event, void *arg) {
 	 * The patch went into 2.6.13-rc3 so in case you are running an FlexCop based
 	 * card (SkyStar2, AirStar) you better upgrade to 2.6.13 or better.
 	 *
-	 * Debouncing of tuneing is done in fe_retune()
+	 * First try was to retune which itself is not enough. One needs to bring
+	 * down the number of received pids to 0 as the transition from 0 -> 1 resets
+	 * the board. So let dmx bounce all filters.
 	 *
 	 */
-	if (adapter->dvrreads == 0) {
-		logwrite(LOG_ERROR, "dvr: lockup of DVB card detected - trying to reanimate via tuning");
-		fe_retune(adapter);
+	if (adapter->dvr.stat.reads == 0) {
+		logwrite(LOG_ERROR, "dvr: lockup of DVB card detected - trying to reanimate via bouncing filter");
+		dmx_bounce_filter(adapter);
 	}
 
-	adapter->dvrreads=0;
+	adapter->dvr.stat.reads=0;
 
-	dvr_flexcop_init(adapter);
+	dvr_stuck_init(adapter);
 }
 
-static void dvr_flexcop_init(struct adapter_s *a) {
+static void dvr_stuck_init(struct adapter_s *a) {
 	struct timeval	tv;
 
 	tv.tv_sec=5;
 	tv.tv_usec=0;
 
-	evtimer_set(&a->dvrflexcoptimer, dvr_flexcop_timer, a);
-	evtimer_add(&a->dvrflexcoptimer, &tv);
+	evtimer_set(&a->dvr.stucktimer, dvr_stuck_timer, a);
+	evtimer_add(&a->dvr.stucktimer, &tv);
 }
 
 
 int dvr_init(struct adapter_s *a) {
 	int			dvrfd;
 
-	a->dvrbuf=malloc(a->dvrbufsize*TS_PACKET_SIZE);
+	a->dvr.buffer.ptr=malloc(a->dvr.buffer.size*TS_PACKET_SIZE);
 
 	dvrfd=open(dvrname(a->no), O_RDONLY|O_NONBLOCK);
 
 	if (dvrfd < 0)
 		return 0;
 
-	event_set(&a->dvrevent, dvrfd, EV_READ|EV_PERSIST, dvr_read, a);
-	event_add(&a->dvrevent, NULL);
+	event_set(&a->dvr.dvrevent, dvrfd, EV_READ|EV_PERSIST, dvr_read, a);
+	event_add(&a->dvr.dvrevent, NULL);
 
 	if (a->budgetmode) {
 		if (!dmx_join_pid(a, 0x2000, DMX_PES_OTHER)) {
@@ -272,10 +274,10 @@ int dvr_init(struct adapter_s *a) {
 		}
 	}
 
-	a->dvrfd=dvrfd;
+	a->dvr.fd=dvrfd;
 
 	dvr_init_stat_timer(a);
-	dvr_flexcop_init(a);
+	dvr_stuck_init(a);
 
 	return 1;
 }
