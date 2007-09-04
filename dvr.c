@@ -150,7 +150,7 @@ static void dvr_read(int fd, short event, void *arg) {
 		 * card to deliver packets
 		 *
 		 */
-		//adapter->dvr.stat.reads++;
+		adapter->dvr.stat.reads++;
 
 		/* EOF aka no more TS Packets ? */
 		if (len == 0)

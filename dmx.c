@@ -137,16 +137,14 @@ void dmx_bounce_filter(struct adapter_s *adapter) {
 		if (adapter->dmx.pidtable[i].fd < 0)
 			continue;
 
-		close(adapter->dmx.pidtable[i].fd);
+		ioctl(adapter->dmx.pidtable[i].fd, DMX_STOP);
 	}
 
 	for(i=0;i<=PID_MAX+1;i++) {
 		if (adapter->dmx.pidtable[i].fd < 0)
 			continue;
 
-		adapter->dmx.pidtable[i].fd=-1;
-
-		dmx_join_pid(adapter, i, adapter->dmx.pidtable[i].type);
+		ioctl(adapter->dmx.pidtable[i].fd, DMX_START);
 	}
 
 }
