@@ -235,6 +235,7 @@ static void dvr_stuck_timer(int fd, short event, void *arg) {
 	 */
 	if (adapter->dvr.stat.reads == 0) {
 		logwrite(LOG_ERROR, "dvr: lockup of DVB card detected - trying to reanimate via bouncing filter");
+		fe_retune(adapter);
 		dmx_bounce_filter(adapter);
 	}
 
