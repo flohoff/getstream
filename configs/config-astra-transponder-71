@@ -8,6 +8,7 @@ adapter 1 {
 	stat-interval 120;
 
 	dvb-s {
+		#lnb-sharing yes;
 		lnb {
 			lof1 9750000;
 			lof2 10600000;

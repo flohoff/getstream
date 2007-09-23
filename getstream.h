@@ -116,10 +116,12 @@ struct adapter_s {
 		struct event			timer;
 		struct event			event;
 		time_t				tunelast;
+
 		struct dvb_frontend_info	feinfo;
 
 		union {
 			struct {					/* Tuning information DVB-S */
+				int		lnbsharing;
 				unsigned long	lnb_lof1;
 				unsigned long	lnb_lof2;
 				unsigned long	lnb_slof;

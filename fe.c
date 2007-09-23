@@ -127,7 +127,24 @@ static int fe_tune_dvbs(struct adapter_s *adapter) {
 	feparams.u.qpsk.symbol_rate=adapter->fe.dvbs.t_srate;
 	feparams.u.qpsk.fec_inner=FEC_AUTO;
 
-	if (adapter->fe.dvbs.t_diseqc) {
+	if (adapter->fe.dvbs.lnbsharing) {
+		int value=SEC_TONE_OFF;
+		logwrite(LOG_DEBUG, "fe: Adapter %d lnb-sharing active - trying to turn off", adapter->no);
+
+		if (ioctl(adapter->fe.fd, FE_SET_TONE, value) < 0) {
+			logwrite(LOG_ERROR, "fe: Adapter %d ioctl FE_SET_TONE failed - %s", adapter->no, strerror(errno));
+		}
+
+		value=SEC_VOLTAGE_OFF;
+		if (ioctl(adapter->fe.fd, FE_SET_VOLTAGE, value) < 0) {
+			if (errno == EINVAL) {
+				logwrite(LOG_DEBUG, "fe: Adapter %d SEC_VOLTAGE_OFF not possible", adapter->no);
+				if (ioctl(adapter->fe.fd, FE_SET_VOLTAGE, voltage) < 0) {
+					logwrite(LOG_ERROR, "fe: Adapter %d ioctl FE_SET_VOLTAGE failed - %s", adapter->no, strerror(errno));
+				}
+			}
+		}
+	} else if (adapter->fe.dvbs.t_diseqc) {
 		for(i=0;i<=1;i++) {
 			logwrite(LOG_DEBUG, "fe: diseqc sending command %d", i);
 
@@ -141,15 +158,16 @@ static int fe_tune_dvbs(struct adapter_s *adapter) {
 		}
 	} else {
 		if (ioctl(adapter->fe.fd, FE_SET_VOLTAGE, voltage) < 0) {
-			logwrite(LOG_ERROR, "fe: ioctl FE_SET_VOLTAGE failed");
+			logwrite(LOG_ERROR, "fe: ioctl FE_SET_VOLTAGE failed - %s", strerror(errno));
 		}
 
 		if (ioctl(adapter->fe.fd, FE_SET_TONE, tone) < 0) {
-			logwrite(LOG_ERROR, "fe: ioctl FE_SET_VOLTAGE failed");
+			logwrite(LOG_ERROR, "fe: ioctl FE_SET_TONE failed - %s", strerror(errno));
 		}
 	}
 
 	logwrite(LOG_INFO, "fe: DVB-S tone = %d", tone);
+	logwrite(LOG_INFO, "fe: DVB-S voltage = %d", voltage);
 	logwrite(LOG_INFO, "fe: DVB-S diseqc = %d", adapter->fe.dvbs.t_diseqc);
 	logwrite(LOG_INFO, "fe: DVB-S freq = %lu", adapter->fe.dvbs.t_freq);
 	logwrite(LOG_INFO, "fe: DVB-S lof1 = %lu", adapter->fe.dvbs.lnb_lof1);
@@ -161,7 +179,7 @@ static int fe_tune_dvbs(struct adapter_s *adapter) {
 	logwrite(LOG_INFO, "fe: DVB-S feparams.u.qpsk.fec_inner = %d", feparams.u.qpsk.fec_inner);
 
 	if (ioctl(adapter->fe.fd, FE_SET_FRONTEND, &feparams) < 0) {
-		logwrite(LOG_ERROR, "fe: ioctl FE_SET_FRONTEND failed");
+		logwrite(LOG_ERROR, "fe: ioctl FE_SET_FRONTEND failed - %s", strerror(errno));
 		exit(-1);
 	}
 
@@ -355,7 +373,6 @@ static void fe_monitor(struct adapter_s *a) {
 #endif
 
 static int fe_tune(struct adapter_s *adapter) {
-	logwrite(LOG_INFO, "fe: Setting up frontend tuner");
 
 	switch(adapter->type) {
 		case(AT_DVBS):
@@ -516,6 +533,9 @@ int fe_tune_init(struct adapter_s *adapter) {
 		logwrite(LOG_ERROR, "Error opening dvb frontend %s", fename);
 		exit(-1);
 	}
+
+	logwrite(LOG_INFO, "fe: Adapter %d Setting up frontend tuner", adapter->no);
+
 	fe_checkcap(adapter);
 
 	/* Single shot - try to tune */

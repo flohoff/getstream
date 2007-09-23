@@ -247,6 +247,8 @@ static int cf_dvbs_trans_srate(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->fe.dvbs.t_srate=val->num; return 1; }
 static int cf_dvbs_trans_diseqc(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->fe.dvbs.t_diseqc=val->num; return 1; }
+static int cf_dvbs_lnbsharing(struct lc_centry *ce, struct lc_value *val)
+	{ adapter->fe.dvbs.lnbsharing=val->num; return 1; }
 
 static struct lc_ventry conf_dvbs_transponder[] = {
 	{ "frequency", 1, 1, LCV_NUM, 0, NULL, cf_dvbs_trans_freq },
@@ -271,6 +273,7 @@ static struct lc_ventry conf_dvbs_lnb[] = {
 };
 
 static struct lc_ventry conf_dvbs[] = {
+	{ "lnb-sharing", 1, 1, LCV_BOOL, 0, NULL, cf_dvbs_lnbsharing },
 	{ "lnb", 1, 1, LCV_NONE, 0, conf_dvbs_lnb, NULL },
 	{ "transponder", 1, 1, LCV_NONE, 0, conf_dvbs_transponder, NULL },
 	{ NULL, 0, 0, 0, 0, NULL },
