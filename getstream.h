@@ -5,6 +5,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <linux/dvb/frontend.h>
+
 #include <event.h>
 #include <glib/glist.h>
 
@@ -110,10 +112,11 @@ struct adapter_s {
 
 	/* fe.c */
 	struct {
-		int			fd;
-		struct event		timer;
-		struct event		event;
-		time_t			tunelast;
+		int				fd;
+		struct event			timer;
+		struct event			event;
+		time_t				tunelast;
+		struct dvb_frontend_info	feinfo;
 
 		union {
 			struct {					/* Tuning information DVB-S */
