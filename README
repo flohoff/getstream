@@ -15,6 +15,7 @@ Configuration:
 		  adapter 1 {
 			budget-mode	1;
 			packet-buffer	50;
+			stat-interval	120;
 		  };
 
 	  - budget-mode
@@ -35,6 +36,12 @@ Configuration:
 		round read from the kernel. Setting this too high just
 		wastes memory (a packet is 188 Bytes) setting it to low
 		creates more context-switches and will reduce performance.
+			
+	  - stat-interval
+	  	The interval in seconds you will see the statistics on in the log e.g.
+
+		2007-10-25 08:27:02.323 dvr: inputstats: 149 pids 23259 pkt/s 4372702 byte/s
+	  
 
   Tuning or Card type:
   --------------------
@@ -67,38 +74,36 @@ Configuration:
         };
 
 
+  DVB-S:
+  ------
+  	DVB-S consists of 2 parts - the LNB and the Transponder config:
 
-  Channel
-    
-    A Channel is the definition of the program in the input transport stream
-    and its output streams. A channel contains at least a name and a single output
-    definition like "stream-http" "stream-rtp" or "stream-udp". The channel number after
-    the channel keyword is the Program Number as found in the PAT (Program Association Table)
-    at pid 0 of the transport stream.
+	LNB:
+		It consists of the LOF1 LOF2 and SLOF. This should be identical
+		for nearly all Digital LNBs in Europe. LOF1 and LOF2 are
+		the "local osscilator" frequencys used for the Low and High
+		Band. The SLOF is the cut off frequency at which the higher
+		"Local Osscilator" frequency aka LOF2 will be used. This will
+		be signaled to the LNB with the 22Khz pilot tone.
 
-    name	- Channel name referred to in SAP announcements and debugging output
-    csa		- Content Scrambling config 
+	Transponder:
+		The transponder is identified by the frequency, the polarisation
+		and the symbol-rate. Additionally one might pass an diseqc 
+		id to address the correct LNB in the DiSeq enabled switch.
 
-    Example:
+	dvb-s {
+		lnb {
+			lof1 9750000;
+			lof2 10600000;
+			slof 11700000;
+		};
 
-      channel 28479 {
-        name "WDR 5";
-        stream-http {
-          url /radio/wdr5;
-        };
-      };
+		transponder {
+			frequency 12266000;
+			polarisation h;
+			symbol-rate 27500000;
+			diseqc 4;
+		};
+	};
 
-  CSA
-  
-    Sometimes it might be necessary license wise to encrypt the content send out. To allow
-    encryption you may configure csa on the channel. You need to configure a key which is 
-    8 byte hex. You may configure an encryption length depending on your CPU resources. By
-    default this is the transport packet size of 188 byte.
-
-    Example:
- 
-    csa {;
-      key 0x1234567812345678;
-      length 64;
-    }
 
