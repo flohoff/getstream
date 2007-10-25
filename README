@@ -78,20 +78,32 @@ Configuration:
   ------
   	DVB-S consists of 2 parts - the LNB and the Transponder config:
 
-	LNB:
-		It consists of the LOF1 LOF2 and SLOF. This should be identical
-		for nearly all Digital LNBs in Europe. LOF1 and LOF2 are
-		the "local osscilator" frequencys used for the Low and High
-		Band. The SLOF is the cut off frequency at which the higher
-		"Local Osscilator" frequency aka LOF2 will be used. This will
-		be signaled to the LNB with the 22Khz pilot tone.
+	lnb-sharing	- Boolean When set getstream trys to not send
+			  an 22Khz Pilot tone or set high voltage for
+			  High/Low band or Polarisation but instead
+			  trusts a different card to do all necessary
+			  things. Some cards can not disable their power
+			  voltage completely so look out for problems.
+
+	lnb
+		The config needs to match your LNB (Low Now Block
+		converter) on your Dish:
+
+		lof1 	- Local osscilator frequency 1 (Low Band)
+		lof2	- Local osscilator frequency 2 (High Band)
+		slof	- Local osscilator frequency cut off
+
+		If the transponder frequency is above the slof getstream enables
+		the 22Khz Pilot tone to switch the LNB to High Band.
 
 	Transponder:
-		The transponder is identified by the frequency, the polarisation
-		and the symbol-rate. Additionally one might pass an diseqc 
-		id to address the correct LNB in the DiSeq enabled switch.
+		frequency	- Frequency of the Transponder in hz.
+		polarisation	- Either H or V for Horizontal or Vertical
+		symbol-rate	- Symbol Rate - Most European transponders use 27500000
+		diseqc		- LNB Diseq code
 
 	dvb-s {
+		lnb-sharing yes;
 		lnb {
 			lof1 9750000;
 			lof2 10600000;
