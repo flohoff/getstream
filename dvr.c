@@ -247,8 +247,12 @@ static void dvr_stuck_timer(int fd, short event, void *arg) {
 static void dvr_stuck_init(struct adapter_s *a) {
 	struct timeval	tv;
 
-	tv.tv_sec=5;
-	tv.tv_usec=0;
+	/* stuck-interval 0; disables the stuck check timer */
+	if (!a->dvr.stuckinterval)
+		return;
+
+	tv.tv_sec=a->dvr.stuckinterval/1000;
+	tv.tv_usec=a->dvr.stuckinterval%1000*1000;
 
 	evtimer_set(&a->dvr.stucktimer, dvr_stuck_timer, a);
 	evtimer_add(&a->dvr.stucktimer, &tv);

@@ -37,6 +37,7 @@ extern int loglevel;
 #define TS_PACKET_SIZE		188
 #define DVR_BUFFER_DEFAULT	50		/* I have seen an average of 44 Packets per read */
 #define PID_MAX			0x1fff
+#define	DVR_DEFAULT_STUCKINT	5000		/* 5 seconds stuck check interval */
 
 enum {
 	PID_NONE,
@@ -154,8 +155,10 @@ struct adapter_s {
 	struct {
 		int			fd;
 		struct event		dvrevent;
+
 		struct event		stucktimer;
 		time_t			lastinput;
+		int			stuckinterval;
 
 		struct {
 			GList		*callback;

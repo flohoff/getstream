@@ -16,6 +16,7 @@ Configuration:
 			budget-mode	1;
 			packet-buffer	50;
 			stat-interval	120;
+			stuck-interval  200;
 		  };
 
 	  - budget-mode
@@ -41,6 +42,10 @@ Configuration:
 	  	The interval in seconds you will see the statistics on in the log e.g.
 
 		2007-10-25 08:27:02.323 dvr: inputstats: 149 pids 23259 pkt/s 4372702 byte/s
+
+	  - stuck-interval
+	  	Interval to fire the stuck check timer for e.g. FlexCop cards.
+		Default 5 seconds, 0 disables.
 	  
 
   Tuning or Card type:

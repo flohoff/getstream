@@ -7,6 +7,7 @@ adapter 1 {
 
 	packet-buffer 50;
 	stat-interval 120;
+	stuck-interval 200;
 
 	dvb-s {
 		lnb {

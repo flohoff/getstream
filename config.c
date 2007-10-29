@@ -31,6 +31,7 @@ static int cf_adapter_start(struct lc_centry *ce, struct lc_value *val) {
 	adapter=calloc(1, sizeof(struct adapter_s));
 	adapter->no=val->num;
 	adapter->budgetmode=1;
+	adapter->dvr.stuckinterval=DVR_DEFAULT_STUCKINT;
 	adapter->dvr.buffer.size=DVR_BUFFER_DEFAULT*TS_PACKET_SIZE;
 	config->adapter=g_list_append(config->adapter, adapter);
 	return 1;
@@ -273,7 +274,7 @@ static struct lc_ventry conf_dvbs_lnb[] = {
 };
 
 static struct lc_ventry conf_dvbs[] = {
-	{ "lnb-sharing", 1, 1, LCV_BOOL, 0, NULL, cf_dvbs_lnbsharing },
+	{ "lnb-sharing", 0, 1, LCV_BOOL, 0, NULL, cf_dvbs_lnbsharing },
 	{ "lnb", 1, 1, LCV_NONE, 0, conf_dvbs_lnb, NULL },
 	{ "transponder", 1, 1, LCV_NONE, 0, conf_dvbs_transponder, NULL },
 	{ NULL, 0, 0, 0, 0, NULL },
@@ -401,11 +402,14 @@ static int cf_adapter_packetbuffer(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->dvr.buffer.size=val->num; return 1; }
 static int cf_adapter_statinterval(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->dvr.stat.interval=val->num; return 1; }
+static int cf_adapter_stuckinterval(struct lc_centry *ce, struct lc_value *val)
+	{ adapter->dvr.stuckinterval=val->num; return 1; }
 
 static struct lc_ventry conf_adapter[] = {
 	{ "budget-mode", 0, 1, LCV_BOOL, 0, NULL, cf_adapter_budget },
 	{ "packet-buffer", 0, 1, LCV_NUM, 0, NULL, cf_adapter_packetbuffer },
 	{ "stat-interval", 0, 1, LCV_NUM, 0, NULL, cf_adapter_statinterval },
+	{ "stuck-interval", 0, 1, LCV_NUM, 0, NULL, cf_adapter_stuckinterval },
 	{ "stream", 0, 0, LCV_NONE, 0, conf_stream, cf_stream_start },
 	{ "dvb-s", 0, 1, LCV_NONE, 0, conf_dvbs, cf_dvbs },
 	{ "dvb-t", 0, 1, LCV_NONE, 0, conf_dvbt, cf_dvbt },
