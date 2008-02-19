@@ -218,7 +218,7 @@ static void output_init_rtp_rtcp(struct output_s *o) {
 #endif
 
 int output_init_rtp(struct output_s *o) {
-	o->sockfd=socket_open(NULL, 0);
+	o->sockfd=socket_open(o->localaddr, 0);
 
 	if (o->sockfd < 0)
 		return -1;

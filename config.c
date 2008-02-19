@@ -56,8 +56,8 @@ static int cf_output_remoteport(struct lc_centry *ce, struct lc_value *val)
 	{ output->remoteport=val->num; return 1; }
 static int cf_output_remoteaddr(struct lc_centry *ce, struct lc_value *val)
 	{ output->remoteaddr=val->string; return 1; }
-static int cf_output_rtpport(struct lc_centry *ce, struct lc_value *val)
-	{ output->rtpport=val->num; return 1; }
+static int cf_output_localaddr(struct lc_centry *ce, struct lc_value *val)
+	{ output->localaddr=val->string; return 1; }
 static int cf_output_ttl(struct lc_centry *ce, struct lc_value *val)
 	{ output->ttl=val->num; return 1; }
 static int cf_output_url(struct lc_centry *ce, struct lc_value *val)
@@ -135,6 +135,7 @@ struct lc_ventry conf_sap[] = {
 };
 
 struct lc_ventry conf_output_udp[] = {
+	{ "local-address", 1, 1, LCV_IPV4ADDR, 0, NULL, cf_output_localaddr },
 	{ "remote-address", 1, 1, LCV_IPADDR, 0, NULL, cf_output_remoteaddr },
 	{ "remote-port", 1, 1, LCV_NUM, 0, NULL, cf_output_remoteport },
 	{ "ttl", 0, 1, LCV_NUM, 0, NULL, cf_output_ttl },
@@ -143,6 +144,7 @@ struct lc_ventry conf_output_udp[] = {
 };
 
 struct lc_ventry conf_output_rtp[] = {
+	{ "local-address", 1, 1, LCV_IPV4ADDR, 0, NULL, cf_output_localaddr },
 	{ "remote-address", 1, 1, LCV_IPV4ADDR, 0, NULL, cf_output_remoteaddr },
 	{ "remote-port", 1, 1, LCV_NUM, 0, NULL, cf_output_remoteport },
 	{ "ttl", 0, 1, LCV_NUM, 0, NULL, cf_output_ttl },

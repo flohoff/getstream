@@ -96,7 +96,6 @@ struct output_s	{
 
 	/* RTCP or HTTP local port or local address */
 	char			*localaddr;
-	int			localport;
 
 	struct sap_s		*sap;
 

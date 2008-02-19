@@ -18,7 +18,7 @@ int output_init_udp(struct output_s *o) {
 	if (!o->buffer)
 		goto errout1;
 
-	o->sockfd=socket_open(NULL, 0);
+	o->sockfd=socket_open(o->localaddr, 0);
 	if (o->sockfd < 0)
 		goto errout2;
 
