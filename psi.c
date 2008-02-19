@@ -132,9 +132,12 @@ int psi_reassemble(struct psisec_s *section, uint8_t *ts, int off) {
 	int		noff;
 	int		payload;
 
-	if (off)
+	if (off) {
 		payload=off;
-	else {
+
+		if (ts[payload] == 0xff)
+			return PSI_RC_NOPAYLOAD;
+	} else {
 		if (ts_tei(ts))
 			return PSI_RC_TEI;
 
@@ -142,37 +145,37 @@ int psi_reassemble(struct psisec_s *section, uint8_t *ts, int off) {
 			return PSI_RC_NOPAYLOAD;
 
 		payload=ts_payload_start(ts);
-	}
 
-	if (!off) {
 		/*
 		 * If "Payload Unit Start Indicator" is set the first byte
 		 * payload is the pointer to the first section.
 		 * ISO 13818-1 2.4.4.2
-		 *
 		 */
-		if (ts_pusi(ts)) {
+		if (ts_pusi(ts))
 			payload+=ts[payload]+1;
-			noff=psi_reassemble_start(section, ts, payload);
-		} else {
-			noff=psi_reassemble_continue(section, ts, payload);
-		}
-	} else {
-		/*
-		 * If we are looking for a second section (off != 0) and
-		 * the byte after the section is 0xff the TS packet
-		 * must be filled with 0xff until the end. ISO 13818-1 2.4.4.
-		 * 0xff is a disallowed table_id.
-		 *
-		 */
-		if (ts[off] == 0xff)
+	}
+
+	/* If we dont have a Payload Unit Start Indicator and we already
+	 * started a section on this PID (valid is non null) we continue
+	 * otherwise we start the reassembly ...
+	 *
+	 * This means that a packet with a
+	 */
+	if (!ts_pusi(ts)) {
+		if (!section->valid)
 			return PSI_RC_NOPAYLOAD;
 
+		noff=psi_reassemble_continue(section, ts, payload);
+	} else {
 		noff=psi_reassemble_start(section, ts, payload);
 	}
 
-	/* We didnt finish this section in this packet so wait for the next packet */
-	if (section->len != section->valid)
+	/*
+	 * We didnt finish this section in this packet so wait for the next packet
+	 * The section->valid check is another precaution for broken/empty
+	 * invalid section parts collected ...
+	 */
+	if (section->len != section->valid || section->valid < PSI_HDR_LEN)
 		return PSI_RC_INCOMPLETE;
 
 	if (!psi_crc_valid(section))
