@@ -16,6 +16,7 @@
 
 #include "getstream.h"
 #include "sap.h"
+#include "socket.h"
 
 /*
  * Implement Mini-SAP Service
@@ -118,62 +119,41 @@ static void sap_init_timer_single(struct sap_s *sap) {
 }
 
 static void sap_init_socket_single(struct sap_s *sap) {
-	struct sockaddr_in	lsin;
-	struct sockaddr_in	rsin;
+	char		*maddr;
+	int		port;
 
-	memset(&lsin, 0, sizeof(struct sockaddr_in));
-	memset(&rsin, 0, sizeof(struct sockaddr_in));
-
-	/*
-	 * Open Socket and connect to its group
-	 */
-	sap->fd=socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	sap->fd=socket_open(NULL, 0);
 
 	if (sap->fd == -1) {
 		fprintf(stderr, "Unable to open SAP socket\n");
 		exit(-1);
 	}
 
-	/* Bind to local port */
-	lsin.sin_family=AF_INET;
-	lsin.sin_addr.s_addr=INADDR_ANY;
-	bind(sap->fd, (struct sockaddr *) &lsin, sizeof(struct sockaddr_in));
+	/* Last resort Multicast config */
+	maddr=SAP_V4_GLOBAL_ADDRESS;
+	port=SAP_PORT;
 
-	rsin.sin_family=AF_INET;
 	/* get SAP remote address from scope or group */
 	if (sap->scope) {
 		/* Most simple way - We have a scope */
 		if (strcasecmp(sap->scope, "global") == 0) {
-			inet_aton(SAP_V4_GLOBAL_ADDRESS, &rsin.sin_addr);
+			maddr=SAP_V4_GLOBAL_ADDRESS;
 		} else if(strcasecmp(sap->scope, "org") == 0) {
-			inet_aton(SAP_V4_ORG_ADDRESS, &rsin.sin_addr);
+			maddr=SAP_V4_ORG_ADDRESS;
 		} else if(strcasecmp(sap->scope, "local") == 0) {
-			inet_aton(SAP_V4_LOCAL_ADDRESS, &rsin.sin_addr);
+			maddr=SAP_V4_LOCAL_ADDRESS;
 		} else {
-			inet_aton(SAP_V4_LINK_ADDRESS, &rsin.sin_addr);
+			maddr=SAP_V4_LINK_ADDRESS;
 		}
-		rsin.sin_port=htons(SAP_PORT);
+		port=SAP_PORT;
 	} else if(sap->group) {
-		/* User requested to define its own group */
-		inet_aton(sap->group, &rsin.sin_addr);
-		if (sap->port) {
-			rsin.sin_port=htons(sap->port);
-		} else {
-			rsin.sin_port=htons(SAP_PORT);
-		}
-	} else {
-		/* Last resort - take global parameters */
-		inet_aton(SAP_V4_GLOBAL_ADDRESS, &rsin.sin_addr);
-		rsin.sin_port=htons(SAP_PORT);
+		maddr=sap->group;
+		port=sap->port;
 	}
 
-	sap->addr=rsin.sin_addr.s_addr;
-
-	/* Connect to group */
-	connect(sap->fd, (struct sockaddr *) &rsin, sizeof(struct sockaddr_in));
-
-	/* Set TTL */
-	setsockopt(sap->fd, IPPROTO_IP, IP_MULTICAST_TTL, &sap->ttl, sizeof(sap->ttl));
+	socket_join_multicast(sap->fd, maddr);
+	socket_connect(sap->fd, maddr, port);
+	socket_set_ttl(sap->fd, sap->ttl);
 }
 
 /* Create SDP Connection Data as per RFC2327 */
