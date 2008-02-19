@@ -146,6 +146,7 @@ struct lc_ventry conf_output_rtp[] = {
 	{ "remote-address", 1, 1, LCV_IPV4ADDR, 0, NULL, cf_output_remoteaddr },
 	{ "remote-port", 1, 1, LCV_NUM, 0, NULL, cf_output_remoteport },
 	{ "ttl", 0, 1, LCV_NUM, 0, NULL, cf_output_ttl },
+	{ "sap", 0, 1, LCV_NONE, 0, conf_sap, cf_sap_start },
 	{ NULL, 0, 0, 0, 0, NULL },
 };
 
