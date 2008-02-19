@@ -220,6 +220,7 @@ static void output_init_rtp_rtcp(struct output_s *o) {
 int output_init_rtp(struct output_s *o) {
 
 	o->sockfd=socket_open(NULL, 0);
+	socket_set_nonblock(o->sockfd);
 
 	/* Join multicast group if its a multicast address */
 	socket_join_multicast(o->sockfd, o->remoteaddr),
