@@ -9,32 +9,25 @@
 #include "getstream.h"
 #include "simplebuffer.h"
 #include "output.h"
+#include "socket.h"
 
 #define UDP_MAX_TS	((1500-40)/TS_PACKET_SIZE)
 
 int output_init_udp(struct output_s *o) {
-	struct sockaddr_in	lsin, rsin;
+	struct sockaddr_in	rsin;
 
-	memset(&lsin, 0, sizeof(struct sockaddr_in));
 	memset(&rsin, 0, sizeof(struct sockaddr_in));
 
 	o->buffer=sb_init(UDP_MAX_TS, TS_PACKET_SIZE, 0);
 	if (o->buffer == NULL)
 		return 0;
 
-	o->sockfd=socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	o->sockfd=socket_open(NULL, 0);
+	socket_set_nonblock(o->sockfd);
+	socket_connect(o->sockfd, o->remoteaddr, o->remoteport);
 
-	/* Create local end sockaddr_in */
-	lsin.sin_family=AF_INET;
-	lsin.sin_port=0;
-	lsin.sin_addr.s_addr=INADDR_ANY;
-	bind(o->sockfd, (struct sockaddr *) &lsin, sizeof(struct sockaddr_in));
-
-	/* Create remote end sockaddr_in */
-	rsin.sin_family=AF_INET;
-	rsin.sin_port=htons(o->remoteport);
-	inet_aton(o->remoteaddr, &rsin.sin_addr);
-	connect(o->sockfd, (struct sockaddr *) &rsin, sizeof(struct sockaddr_in));
+	/* Join Multicast group if its a multicast destination */
+	socket_join_multicast(o->sockfd, o->remoteaddr);
 
 	/*
 	 * Set socket TTL - Be warned - I DoSed a Cisco 5500 RSM by sending
@@ -42,11 +35,9 @@ int output_init_udp(struct output_s *o) {
 	 * went to lala land. It seems dropping MCAST traffic is very expensive
 	 * in IOS 12.1 and its even dropped in Layer 3 instead of Layer 2 although
 	 * nobody expects ICMP "TTL expired" for MCAST traffic
-	 *
 	 */
-	if (o->ttl) {
-		setsockopt(o->sockfd, IPPROTO_IP, IP_MULTICAST_TTL, &o->ttl, sizeof(o->ttl));
-	}
+	if (o->ttl)
+		socket_set_ttl(o->sockfd, o->ttl);
 
 	/* We do want to get TSP packets */
 	o->receiver=1;

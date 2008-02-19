@@ -58,8 +58,6 @@ static int cf_output_remoteaddr(struct lc_centry *ce, struct lc_value *val)
 	{ output->remoteaddr=val->string; return 1; }
 static int cf_output_rtpport(struct lc_centry *ce, struct lc_value *val)
 	{ output->rtpport=val->num; return 1; }
-static int cf_output_rtcpport(struct lc_centry *ce, struct lc_value *val)
-	{ output->rtcpport=val->num; return 1; }
 static int cf_output_ttl(struct lc_centry *ce, struct lc_value *val)
 	{ output->ttl=val->num; return 1; }
 static int cf_output_url(struct lc_centry *ce, struct lc_value *val)
@@ -120,8 +118,6 @@ static int cf_output_udp_start(struct lc_centry *ce, struct lc_value *val)
 	{ return cf_output_start(ce, val, OTYPE_UDP); }
 static int cf_output_rtp_start(struct lc_centry *ce, struct lc_value *val)
 	{ return cf_output_start(ce, val, OTYPE_RTP); }
-static int cf_output_rtcp_start(struct lc_centry *ce, struct lc_value *val)
-	{ return cf_output_start(ce, val, OTYPE_RTCP); }
 static int cf_output_http_start(struct lc_centry *ce, struct lc_value *val)
 	{ return cf_output_start(ce, val, OTYPE_HTTP); }
 static int cf_output_pipe_start(struct lc_centry *ce, struct lc_value *val)
@@ -150,12 +146,6 @@ struct lc_ventry conf_output_rtp[] = {
 	{ "remote-address", 1, 1, LCV_IPV4ADDR, 0, NULL, cf_output_remoteaddr },
 	{ "remote-port", 1, 1, LCV_NUM, 0, NULL, cf_output_remoteport },
 	{ "ttl", 0, 1, LCV_NUM, 0, NULL, cf_output_ttl },
-	{ NULL, 0, 0, 0, 0, NULL },
-};
-
-struct lc_ventry conf_output_rtcp[] = {
-	{ "rtp-port", 1, 1, LCV_NUM, 0, NULL, cf_output_rtpport },
-	{ "rtcp-port", 1, 1, LCV_NUM, 0, NULL, cf_output_rtcpport },
 	{ NULL, 0, 0, 0, 0, NULL },
 };
 
@@ -234,7 +224,6 @@ static struct lc_ventry conf_stream[] = {
 	{ "input", 0, 1, LCV_NONE, 0, conf_input, NULL },
 	{ "output-udp", 0, 0, LCV_NONE, 0, conf_output_udp, cf_output_udp_start },
 	{ "output-rtp", 0, 0, LCV_NONE, 0, conf_output_rtp, cf_output_rtp_start },
-	{ "output-rtcp", 0, 0, LCV_NONE, 0, conf_output_rtcp, cf_output_rtcp_start },
 	{ "output-http", 0, 0, LCV_NONE, 0, conf_output_http, cf_output_http_start },
 	{ "output-pipe", 0, 0, LCV_NONE, 0, conf_output_pipe, cf_output_pipe_start },
 	{ NULL, 0, 0, 0, 0, NULL },

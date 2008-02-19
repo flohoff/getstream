@@ -7,7 +7,8 @@ OBJ-getstream=getstream.o fe.o crc32.o \
 	output.o output_http.o output_udp.o output_pipe.o output_rtp.o \
 	dmx.o dvr.o \
 	pat.o pmt.o psi.o \
-	simplebuffer.o sap.o
+	simplebuffer.o sap.o \
+	socket.o
 
 OBJ-tsdecode=tsdecode.o psi.o crc32.o 
 

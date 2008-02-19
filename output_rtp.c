@@ -10,6 +10,7 @@
 
 #include "output.h"
 #include "simplebuffer.h"
+#include "socket.h"
 
 
 #if 0
@@ -109,6 +110,7 @@ int output_rtp_new_receiver(struct output_s *o,
 	return 0;
 }
 
+#if 0
 
 static struct rtp_receiver_s *output_rtp_find_rtpr(struct output_s *o, uint32_t ssrc) {
 	struct rtp_receiver_s	*r;
@@ -193,7 +195,6 @@ static void output_rtp_read_rtcp(int fd, short event, void *arg) {
 	output_rtp_parse_rtcp(o, o->rtcpbuffer, size, &sin);
 }
 
-
 static void output_init_rtp_rtcp(struct output_s *o) {
 	struct sockaddr_in	sin;
 
@@ -214,37 +215,21 @@ static void output_init_rtp_rtcp(struct output_s *o) {
 			EV_READ|EV_PERSIST, output_rtp_read_rtcp, o);
 	event_add(&o->rtcpevent, NULL);
 }
+#endif
 
 int output_init_rtp(struct output_s *o) {
-	struct sockaddr_in	lsin;
 
-	memset(&lsin, 0, sizeof(struct sockaddr_in));
+	o->sockfd=socket_open(NULL, 0);
 
-	o->sockfd=socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-	lsin.sin_family=AF_INET;
-	lsin.sin_addr.s_addr=INADDR_ANY;
-
-	if (o->type == OTYPE_RTP)
-		lsin.sin_port=htons(0);
-	else
-		lsin.sin_port=htons(o->rtpport);
-
-	bind(o->sockfd, (struct sockaddr *) &lsin, sizeof(struct sockaddr_in));
+	/* Join multicast group if its a multicast address */
+	socket_join_multicast(o->sockfd, o->remoteaddr),
 
 	/* Do you have a better idea ? */
 	o->rtpssrc=(uint32_t) random();
 	o->buffer=sb_init(RTP_MAX_TS, TS_PACKET_SIZE, RTP_HEADROOM);
 
-	switch(o->type) {
-		case(OTYPE_RTP):
-			output_rtp_new_receiver(o,
-				o->remoteaddr, o->remoteport, 0);
-			break;
-		case(OTYPE_RTCP):
-			output_init_rtp_rtcp(o);
-			break;
-	}
+	output_rtp_new_receiver(o,
+		o->remoteaddr, o->remoteport, 0);
 
 	return 0;
 }
