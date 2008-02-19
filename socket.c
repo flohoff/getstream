@@ -67,12 +67,12 @@ int socket_join_multicast(int sock, char *addr) {
 	if (!inet_aton(addr, &mreq.imr_multiaddr))
 		return -1;
 
-	if (!IN_MULTICAST(mreq.imr_multiaddr.s_addr))
+	if (!IN_MULTICAST(ntohl(mreq.imr_multiaddr.s_addr)))
 		return 0;
 
 	mreq.imr_interface.s_addr=INADDR_ANY;
 
-	return setsockopt (sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+	return setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
 }
 
 int socket_connect(int sock, char *addr, int port) {
