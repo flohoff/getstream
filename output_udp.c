@@ -14,17 +14,18 @@
 #define UDP_MAX_TS	((1500-40)/TS_PACKET_SIZE)
 
 int output_init_udp(struct output_s *o) {
-	struct sockaddr_in	rsin;
-
-	memset(&rsin, 0, sizeof(struct sockaddr_in));
-
 	o->buffer=sb_init(UDP_MAX_TS, TS_PACKET_SIZE, 0);
-	if (o->buffer == NULL)
-		return 0;
+	if (!o->buffer)
+		goto errout1;
 
 	o->sockfd=socket_open(NULL, 0);
+	if (o->sockfd < 0)
+		goto errout2;
+
 	socket_set_nonblock(o->sockfd);
-	socket_connect(o->sockfd, o->remoteaddr, o->remoteport);
+
+	if (socket_connect(o->sockfd, o->remoteaddr, o->remoteport))
+		goto errout3;
 
 	/* Join Multicast group if its a multicast destination */
 	socket_join_multicast(o->sockfd, o->remoteaddr);
@@ -43,6 +44,13 @@ int output_init_udp(struct output_s *o) {
 	o->receiver=1;
 
 	return 1;
+
+errout3:
+	socket_close(o->sockfd);
+errout2:
+	sb_free(o->buffer);
+errout1:
+	return 0;
 }
 
 void output_send_udp(struct output_s *o, uint8_t *tsp) {

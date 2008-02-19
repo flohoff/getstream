@@ -13,6 +13,10 @@
 #include "output.h"
 #include "simplebuffer.h"
 
+void socket_close(int sock) {
+	close(sock);
+}
+
 int socket_open(char *laddr, int port) {
 	struct sockaddr_in	lsin;
 	int			sock;
