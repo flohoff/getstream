@@ -124,3 +124,22 @@ Configuration:
 	};
 
 
+  Input:
+  ------
+	The input section in every stream defines which parts of the
+	Transponder needs to be forwarded into this stream. Currently
+	there are 3 options.
+
+	pid	- A static pid to forward. Sometimes people want to 
+		  have the encryption stuff forwarded e.g. pid 10 and 11
+
+	pnr	- Program number e.g. a full Programm including all pids.
+
+	full	- A full transponder e.g. the same as pid 0x2000.
+
+	Example:
+	--------
+
+	input {
+		full;
+	};
