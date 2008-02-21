@@ -68,7 +68,8 @@ struct pat_s {
 enum {
 	INPUT_NONE,
 	INPUT_PID,
-	INPUT_PNR
+	INPUT_PNR,
+	INPUT_FULL
 };
 
 struct input_s {
@@ -159,6 +160,9 @@ struct adapter_s {
 		struct event		stucktimer;
 		time_t			lastinput;
 		int			stuckinterval;
+
+		/* List of full stream callbacks */
+		GList			*fullcb;
 
 		struct {
 			GList		*callback;

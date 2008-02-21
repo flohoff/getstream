@@ -105,6 +105,12 @@ static int cf_input_pnr(struct lc_centry *ce, struct lc_value *val) {
 	return 1;
 }
 
+static int cf_input_full(struct lc_centry *ce, struct lc_value *val) {
+	cf_input_start(INPUT_FULL);
+	return 1;
+}
+
+
 static int cf_output_start(struct lc_centry *ce, struct lc_value *val, int stype) {
 	output=calloc(1, sizeof(struct output_s));
 	output->type=stype;
@@ -218,6 +224,7 @@ static struct lc_ventry conf_channel_csa[] = {
 static struct lc_ventry conf_input[] = {
 	{ "pid", 0, 0, LCV_NUM, LCO_UNIQ, NULL, cf_input_pid },
 	{ "pnr", 0, 1, LCV_NUM, LCO_UNIQ, NULL, cf_input_pnr },
+	{ "full", 0, 1, LCV_NONE, LCO_UNIQ, NULL, cf_input_full },
 	{ NULL, 0, 0, 0, 0, NULL },
 };
 

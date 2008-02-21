@@ -49,8 +49,13 @@ static inline void dvr_input_ts(struct adapter_s *a, uint8_t *ts) {
 		return;
 	}
 
-	pid=ts_pid(ts);
+	/* Full stream callbacks - pseudo pid 0x2000 */
+	for(pcbl=g_list_first(a->dvr.fullcb);pcbl!=NULL;pcbl=g_list_next(pcbl)) {
+		struct pidcallback_s	*pcb=pcbl->data;
+		pcb->callback(ts, pcb->arg);
+	}
 
+	pid=ts_pid(ts);
 	a->dvr.pidtable[pid].packets++;
 
 	/* Does somebody want this pid ? */
@@ -116,6 +121,13 @@ void *dvr_add_pcb(struct adapter_s *a, unsigned int pid, unsigned int type,
 	pcb->arg=arg;
 	pcb->pidt=pidt;
 	pcb->type=type;
+
+	/* Joined pseudo pid 0x2000 e.g. input full */
+	if (pid == PID_MAX+1) {
+		/* FIXME: How to detect we need to join 0x2000? */
+		a->dvr.fullcb=g_list_append(a->dvr.fullcb, pcb);
+		return pcb;
+	}
 
 	if (type == DVRCB_SECTION) {
 		a->dvr.pidtable[pid].secuser++;

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "getstream.h"
 #include "simplebuffer.h"
@@ -64,8 +65,8 @@ void output_send_udp(struct output_s *o, uint8_t *tsp) {
 		len=send(o->sockfd, sb_bufptr(o->buffer), sb_buflen(o->buffer), MSG_DONTWAIT);
 
 		if (len != sb_buflen(o->buffer))
-			logwrite(LOG_DEBUG, "streamudp: send didnt send all... %d/%d\n",
-					len, sb_buflen(o->buffer));
+			logwrite(LOG_DEBUG, "streamudp: send didnt send all %d of %d byte - %s\n",
+					len, sb_buflen(o->buffer), strerror(errno));
 
 		sb_zap(o->buffer);
 	}

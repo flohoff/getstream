@@ -22,6 +22,16 @@ static void input_init_pid(struct input_s *input) {
 					input->stream);
 }
 
+static void input_init_full(struct input_s *input) {
+	input->pid.cbkey=dvr_add_pcb(input->stream->adapter,
+					PID_MAX+1,
+					DVRCB_TS,
+					PID_STATIC,
+					stream_send,
+					input->stream);
+}
+
+
 void input_init(struct input_s	*input) {
 	switch(input->type) {
 		case(INPUT_PNR):
@@ -29,6 +39,9 @@ void input_init(struct input_s	*input) {
 			break;
 		case(INPUT_PID):
 			input_init_pid(input);
+			break;
+		case(INPUT_FULL):
+			input_init_full(input);
 			break;
 		default:
 			logwrite(LOG_ERROR, "input: Unknown input type %d", input->type);
