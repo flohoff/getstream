@@ -529,7 +529,7 @@ int fe_tune_init(struct adapter_s *adapter) {
 
 	adapter->fe.fd=open(fename, O_RDWR|O_NONBLOCK);
 
-	if (!adapter->fe.fd) {
+	if (adapter->fe.fd < 0) {
 		logwrite(LOG_ERROR, "Error opening dvb frontend %s", fename);
 		exit(-1);
 	}
