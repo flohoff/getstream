@@ -224,6 +224,7 @@ int output_init_rtp(struct output_s *o) {
 		return -1;
 
 	socket_set_nonblock(o->sockfd);
+	socket_set_ttl(o->sockfd, o->ttl);
 
 	/* Join multicast group if its a multicast address */
 	socket_join_multicast(o->sockfd, o->remoteaddr),
