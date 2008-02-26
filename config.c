@@ -373,6 +373,8 @@ static struct lc_ventry conf_dvbt[] = {
 
 static int cf_dvbs(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->type=AT_DVBS; return 1; }
+static int cf_dvbs2(struct lc_centry *ce, struct lc_value *val)
+	{ adapter->type=AT_DVBS2; return 1; }
 static int cf_dvbt(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->type=AT_DVBT; return 1; }
 static int cf_dvbc(struct lc_centry *ce, struct lc_value *val)
@@ -411,6 +413,7 @@ static struct lc_ventry conf_adapter[] = {
 	{ "stuck-interval", 0, 1, LCV_NUM, 0, NULL, cf_adapter_stuckinterval },
 	{ "stream", 0, 0, LCV_NONE, 0, conf_stream, cf_stream_start },
 	{ "dvb-s", 0, 1, LCV_NONE, 0, conf_dvbs, cf_dvbs },
+	{ "dvb-s2", 0, 1, LCV_NONE, 0, conf_dvbs, cf_dvbs2 },
 	{ "dvb-t", 0, 1, LCV_NONE, 0, conf_dvbt, cf_dvbt },
 	{ "dvb-c", 0, 1, LCV_NONE, 0, conf_dvbc, cf_dvbc },
 	{ NULL, 0, 0, 0, 0, NULL },

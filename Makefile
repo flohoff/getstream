@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-O0 -g -Wall -I/usr/include/glib-2.0/ -I/usr/lib/glib-2.0/include/
+CFLAGS=-O0 -g -Wall  -I. -I/usr/include/glib-2.0/ -I/usr/lib/glib-2.0/include/ -I/usr/src/multiproto/linux/include
 LDFLAGS=-levent -lglib-2.0 -lpthread
 OBJ-getstream=getstream.o fe.o crc32.o \
 	libhttp.o libconf.o config.o util.o logging.o \

@@ -5,6 +5,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <linux/dvb/version.h>
+#include <linux/dvb/dmx.h>
 #include <linux/dvb/frontend.h>
 
 #include <event.h>
@@ -12,6 +14,128 @@
 
 #include "sap.h"
 #include "psi.h"
+
+#if (DVB_API_VERSION==3) && (DVB_API_VERSION_MINOR>=3)
+
+#define MULTIPROTO
+
+#define AT_DVBS DVBFE_DELSYS_DVBS
+#define AT_DVBS2 DVBFE_DELSYS_DVBS2
+#define AT_DVBT DVBFE_DELSYS_DVBT
+#define AT_DVBC DVBFE_DELSYS_DVBC
+
+#define	FE_PARAM		struct dvbfe_params
+#define	FE_EVENT		struct dvbfe_event
+#define FE_INFO			struct dvbfe_info
+#define IOCTL_GET_EVENT		DVBFE_GET_EVENT
+#define IOCTL_SET_FE		DVBFE_SET_PARAMS
+#define FE_GET_STATUS(a)	((a).fe_events.status)
+
+#define DVB_SET_DELIVERY(a, b)		(a)->delivery=(b);
+#define DVBC_SET_SYMBOLRATE(a, b)	(a)->delsys.dvbc.symbol_rate=(b)
+#define DVBC_SET_MODULATION(a, b)	(a)->delsys.dvbc.modulation=(b)
+#define DVBC_SET_FEC(a, b)		(a)->delsys.dvbc.fec=(b)
+
+/* Multiproto doesnt know about different hierarchy settings - hide it */
+#define DVBFE_HIERARCHY_1		DVBFE_HIERARCHY_ON
+#define DVBFE_HIERARCHY_2		DVBFE_HIERARCHY_ON
+#define DVBFE_HIERARCHY_4		DVBFE_HIERARCHY_ON
+
+#define DVBT_SET_BANDWIDTH(a, b)	(a)->delsys.dvbt.bandwidth=(b)
+#define DVBT_SET_MODULATION(a, b)	(a)->delsys.dvbt.constellation=(b)
+#define DVBT_SET_TMODE(a, b)		(a)->delsys.dvbt.transmission_mode=(b)
+#define DVBT_SET_GUARD(a, b)		(a)->delsys.dvbt.guard_interval=(b)
+#define DVBT_SET_HIERARCHY(a, b)	(a)->delsys.dvbt.hierarchy=(b)
+#define DVBT_SET_CODERATE_HP(a, b)	(a)->delsys.dvbt.code_rate_HP=(b)
+#define DVBT_SET_CODERATE_LP(a, b)	(a)->delsys.dvbt.code_rate_LP=(b)
+
+#define DVBS_SET_SYMBOLRATE(a, b)	(a)->delsys.dvbs.symbol_rate=(b)
+#define DVBS_SET_FEC(a, b)		(a)->delsys.dvbs.fec=(b)
+#define DVBS2_SET_SYMBOLRATE(a, b)	(a)->delsys.dvbs2.symbol_rate=(b)
+#define DVBS2_SET_FEC(a, b)		(a)->delsys.dvbs2.fec=(b)
+
+#else
+
+enum {
+	AT_DVBS,
+	AT_DVBS2,
+	AT_DVBT,
+	AT_DVBC
+};
+
+#define FE_PARAM		struct dvb_frontend_parameters
+#define	FE_EVENT		struct dvb_frontenv_event
+#define FE_INFO			struct dvb_frontend_info
+#define IOCTL_GET_EVENT		FE_GET_EVENT
+#define IOCTL_SET_FE		FE_SET_FRONTEND
+#define FE_GET_STATUS(a)	((a).status)
+
+#define	DVBFE_MOD_QPSK		QPSK
+#define	DVBFE_MOD_QAMAUTO	QAM_AUTO
+#define	DVBFE_MOD_QAM16		QAM_16
+#define DVBFE_MOD_QAM32		QAM_32
+#define DVBFE_MOD_QAM64		QAM_64
+#define DVBFE_MOD_QAM128	QAM_128
+#define DVBFE_MOD_QAM256	QAM_256
+
+#define	DVBFE_FEC_NONE	FEC_NONE
+#define	DVBFE_FEC_1_2	FEC_1_2
+#define	DVBFE_FEC_2_3	FEC_2_4
+#define	DVBFE_FEC_3_4	FEC_3_4
+#define	DVBFE_FEC_4_5	FEC_4_5
+#define	DVBFE_FEC_5_6	FEC_5_6
+#define	DVBFE_FEC_6_7	FEC_6_7
+#define	DVBFE_FEC_7_8	FEC_7_8
+#define	DVBFE_FEC_8_9	FEC_8_9
+#define	DVBFE_FEC_AUTO	FEC_AUTO
+
+#define DVB_SET_DELIVERY(a, b)		do{ } while(0);
+#define DVBC_SET_SYMBOLRATE(a, b)	(a)->u.qam.symbol_rate=(b)
+#define DVBC_SET_MODULATION(a, b)	(a)->u.qam.modulation=(b)
+#define DVBC_SET_FEC(a, b)		(a)->u.qam.fec_inner=(b)
+
+
+#define DVBFE_BANDWIDTH_AUTO		BANDWIDTH_AUTO
+#define DVBFE_BANDWIDTH_6_MHZ		BANDWIDTH_6_MHZ
+#define DVBFE_BANDWIDTH_7_MHZ		BANDWIDTH_7_MHZ
+#define DVBFE_BANDWIDTH_8_MHZ		BANDWIDTH_8_MHZ
+#define DVBFE_MOD_QAMAUTO		QAM_AUTO
+#define DVBFE_MOD_QAM16			QAM_16
+#define DVBFE_MOD_QAM32			QAM_32
+#define DVBFE_MOD_QAM64			QAM_64
+#define DVBFE_MOD_QAM128		QAM_128
+#define DVBFE_MOD_QAM256		QAM_256
+#define DVBFE_TRANSMISSION_MODE_AUTO	TRANSMISSION_MODE_AUTO
+#define DVBFE_TRANSMISSION_MODE_2K	TRANSMISSION_MODE_2K
+#define DVBFE_TRANSMISSION_MODE_8K	TRANSMISSION_MODE_8K
+#define DVBFE_GUARD_INTERVAL_AUTO	GUARD_INTERVAL_AUTO
+#define DVBFE_GUARD_INTERVAL_1_4	GUARD_INTERVAL_1_4
+#define DVBFE_GUARD_INTERVAL_1_8	GUARD_INTERVAL_1_8
+#define DVBFE_GUARD_INTERVAL_1_16	GUARD_INTERVAL_1_16
+#define DVBFE_GUARD_INTERVAL_1_32	GUARD_INTERVAL_1_32
+#define DVBFE_HIERARCHY_OFF		HIERARCHY_NONE
+#define DVBFE_HIERARCHY_AUTO		HIERARCHY_AUTO
+#define DVBFE_HIERARCHY_1		HIERARCHY_1
+#define DVBFE_HIERARCHY_2		HIERARCHY_2
+#define DVBFE_HIERARCHY_4		HIERARCHY_4
+
+#define DVBT_SET_BANDWIDTH(a, b)	(a)->u.ofdm.bandwidth=(b)
+#define DVBT_SET_MODULATION(a, b)	(a)->u.ofdm.constellation=(b)
+#define DVBT_SET_TMODE(a, b)		(a)->u.ofdm.transmission_mode=(b)
+#define DVBT_SET_GUARD(a, b)		(a)->u.ofdm.guard_interval=(b)
+#define DVBT_SET_HIERARCHY(a, b)	(a)->u.ofdm.hierarchy_information=(b)
+#define DVBT_SET_CODERATE_HP(a, b)	(a)->u.ofdm.code_rate_HP=(b)
+#define DVBT_SET_CODERATE_LP(a, b)	(a)->u.ofdm.code_rate_LP=(b)
+
+#define DVBS_SET_SYMBOLRATE(a, b)	(a)->u.qpsk.symbol_rate=(b)
+#define DVBS_SET_FEC(a, b)		(a)->u.qpsk.fec_inner=(b)
+
+/* DVB API < 3.3 does not support DVB-S2 */
+#define DVBS2_SET_SYMBOLRATE(a, b)	do{ }while(0)
+#define DVBS2_SET_FEC(a, b)		do{ }while(0)
+
+#endif
+
 
 #define DEBUG
 
@@ -99,12 +223,6 @@ struct stream_s {
 	struct event		patevent;
 };
 
-enum {
-	AT_DVBS,
-	AT_DVBT,
-	AT_DVBC
-};
-
 struct adapter_s {
 	int			no;		/* Adapter Number */
 	int			type;		/* Adapter Type - DVB-S/DVB-T/DVB-C */
@@ -119,7 +237,7 @@ struct adapter_s {
 		struct event			event;
 		time_t				tunelast;
 
-		struct dvb_frontend_info	feinfo;
+		FE_INFO				feinfo;
 
 		union {
 			struct {					/* Tuning information DVB-S */
