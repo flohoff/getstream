@@ -64,11 +64,13 @@ enum {
 };
 
 #define FE_PARAM		struct dvb_frontend_parameters
-#define	FE_EVENT		struct dvb_frontenv_event
+#define	FE_EVENT		struct dvb_frontend_event
 #define FE_INFO			struct dvb_frontend_info
 #define IOCTL_GET_EVENT		FE_GET_EVENT
 #define IOCTL_SET_FE		FE_SET_FRONTEND
 #define FE_GET_STATUS(a)	((a).status)
+
+#define DVBFE_INVERSION_AUTO	INVERSION_AUTO
 
 #define	DVBFE_MOD_QPSK		QPSK
 #define	DVBFE_MOD_QAMAUTO	QAM_AUTO
@@ -80,7 +82,7 @@ enum {
 
 #define	DVBFE_FEC_NONE	FEC_NONE
 #define	DVBFE_FEC_1_2	FEC_1_2
-#define	DVBFE_FEC_2_3	FEC_2_4
+#define	DVBFE_FEC_2_3	FEC_2_3
 #define	DVBFE_FEC_3_4	FEC_3_4
 #define	DVBFE_FEC_4_5	FEC_4_5
 #define	DVBFE_FEC_5_6	FEC_5_6
@@ -93,7 +95,6 @@ enum {
 #define DVBC_SET_SYMBOLRATE(a, b)	(a)->u.qam.symbol_rate=(b)
 #define DVBC_SET_MODULATION(a, b)	(a)->u.qam.modulation=(b)
 #define DVBC_SET_FEC(a, b)		(a)->u.qam.fec_inner=(b)
-
 
 #define DVBFE_BANDWIDTH_AUTO		BANDWIDTH_AUTO
 #define DVBFE_BANDWIDTH_6_MHZ		BANDWIDTH_6_MHZ
