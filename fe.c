@@ -503,7 +503,7 @@ static void fe_checkcap(struct adapter_s *adapter) {
 	}
 
 	if (adapter->fe.feinfo.type == FE_QPSK && !(adapter->fe.feinfo.caps & FE_CAN_FEC_AUTO)) {
-		logwrite(LOG_ERROR, "fe: adapter %s is incapable of handling FEC_AUTO - please report to flo@rfc822.org", adapter->no);
+		logwrite(LOG_ERROR, "fe: adapter %d is incapable of handling FEC_AUTO - please report to flo@rfc822.org", adapter->no);
 	}
 
 	logwrite(LOG_DEBUG, "fe: adapter %d type %s name \"%s\"", adapter->no, type, adapter->fe.feinfo.name);
