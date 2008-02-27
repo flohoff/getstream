@@ -432,22 +432,22 @@ static void fe_checkcap(struct adapter_s *adapter) {
 			type="QPSK";
 			if (adapter->type == AT_DVBS)
 				break;
-			logwrite(LOG_ERROR, "fe: adapter %s is an DVB-S card - config is not for DVB-S", adapter->no);
+			logwrite(LOG_ERROR, "fe: Adapter %d is an DVB-S card - config is not for DVB-S", adapter->no);
 			exit(-1);
 		case(FE_OFDM):
 			type="OFDM";
 			if (adapter->type == AT_DVBT)
 				break;
-			logwrite(LOG_ERROR, "fe: adapter %s is an DVB-T card - config is not for DVB-T", adapter->no);
+			logwrite(LOG_ERROR, "fe: Adapter %d is an DVB-T card - config is not for DVB-T", adapter->no);
 			exit(-1);
 		case(FE_QAM):
 			type="QAM";
 			if (adapter->type == AT_DVBC)
 				break;
-			logwrite(LOG_ERROR, "fe: adapter %s is an DVB-C card - config is not for DVB-C", adapter->no);
+			logwrite(LOG_ERROR, "fe: Adapter %d is an DVB-C card - config is not for DVB-C", adapter->no);
 			exit(-1);
 		default:
-			logwrite(LOG_ERROR, "fe: adapter %s is an unknown card type %d", adapter->no, adapter->fe.feinfo.type);
+			logwrite(LOG_ERROR, "fe: Adapter %d is an unknown card type %d", adapter->no, adapter->fe.feinfo.type);
 			break;
 	}
 
