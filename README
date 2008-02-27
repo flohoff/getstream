@@ -79,7 +79,7 @@ Configuration:
         };
 
 
-  DVB-S:
+  DVB-S / DVB-S2:
   ------
   	DVB-S consists of 2 parts - the LNB and the Transponder config:
 
@@ -123,6 +123,9 @@ Configuration:
 		};
 	};
 
+	For "DVB-S2" the type obviously has to be changed to "dvb-s2". Also getstream
+	need to be compiled against the multiproto header files and you need to be using
+	multiproto enabled cards.
 
   Input:
   ------
