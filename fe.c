@@ -421,7 +421,7 @@ static void fe_checkcap(struct adapter_s *adapter) {
 	adapter->fe.feinfo.delivery = adapter->type;
 #endif
 
-	if (ioctl(adapter->fe.fd, FE_GET_INFO, &adapter->fe.feinfo)) {
+	if (ioctl(adapter->fe.fd, IOCTL_GET_INFO, &adapter->fe.feinfo)) {
 		logwrite(LOG_ERROR, "fe: ioctl(FE_GET_INFO...) failed");
 		exit(-1);
 	}

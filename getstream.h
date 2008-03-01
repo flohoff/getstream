@@ -28,6 +28,7 @@
 #define	FE_EVENT		struct dvbfe_event
 #define FE_INFO			struct dvbfe_info
 #define IOCTL_GET_EVENT		DVBFE_GET_EVENT
+#define IOCTL_GET_INFO		DVBFE_GET_INFO
 #define IOCTL_SET_FE		DVBFE_SET_PARAMS
 #define FE_GET_STATUS(a)	((a).fe_events.status)
 
@@ -68,6 +69,7 @@ enum {
 #define FE_INFO			struct dvb_frontend_info
 #define IOCTL_GET_EVENT		FE_GET_EVENT
 #define IOCTL_SET_FE		FE_SET_FRONTEND
+#define IOCTL_GET_INFO		FE_GET_INFO
 #define FE_GET_STATUS(a)	((a).status)
 
 #define DVBFE_INVERSION_AUTO	INVERSION_AUTO
