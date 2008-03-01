@@ -411,22 +411,50 @@ static void fe_event(int fd, short ev, void *arg) {
 	}
 }
 
-static void fe_checkcap(struct adapter_s *adapter) {
-	char		*type="unknown";
-
 #ifdef MULTIPROTO
+
+static void fe_checkcap(struct adapter_s *adapter) {
+
 	/* adapter->type is set to DVBFE_DELSYS_*, see getstream.h.
 	 * this avoids another tedious case switch. ioctl returns
 	 * -ENOTSUPP if wrong delivery is selected */
 	adapter->fe.feinfo.delivery = adapter->type;
-#endif
+
+	if (ioctl(adapter->fe.fd, IOCTL_GET_INFO, &adapter->fe.feinfo)) {
+		logwrite(LOG_ERROR, "fe: ioctl(DVBFE_GET_INFO...) failed");
+		exit(-1);
+	}
+
+	logwrite(LOG_DEBUG, "fe: adapter %d delivery type %d name \"%s\"",
+				adapter->no,
+				adapter->type,
+				adapter->fe.feinfo.name);
+
+	logwrite(LOG_DEBUG, "fe: adapter %d frequency min %d max %d step %d tolerance %d",
+				adapter->no,
+				adapter->fe.feinfo.frequency_min,
+				adapter->fe.feinfo.frequency_max,
+				adapter->fe.feinfo.frequency_step,
+				adapter->fe.feinfo.frequency_tolerance);
+
+	logwrite(LOG_DEBUG, "fe: adapter %d symbol rate min %d max %d tolerance %d",
+				adapter->no,
+				adapter->fe.feinfo.symbol_rate_min,
+				adapter->fe.feinfo.symbol_rate_max,
+				adapter->fe.feinfo.symbol_rate_tolerance);
+
+}
+
+#else
+
+static void fe_checkcap(struct adapter_s *adapter) {
+	char		*type="unknown";
 
 	if (ioctl(adapter->fe.fd, IOCTL_GET_INFO, &adapter->fe.feinfo)) {
 		logwrite(LOG_ERROR, "fe: ioctl(FE_GET_INFO...) failed");
 		exit(-1);
 	}
 
-#ifndef MULTIPROTO
 	switch(adapter->fe.feinfo.type) {
 		case(FE_QPSK):
 			type="QPSK";
@@ -454,19 +482,17 @@ static void fe_checkcap(struct adapter_s *adapter) {
 	if (adapter->fe.feinfo.type == FE_QPSK && !(adapter->fe.feinfo.caps & FE_CAN_FEC_AUTO)) {
 		logwrite(LOG_ERROR, "fe: adapter %d is incapable of handling FEC_AUTO - please report to flo@rfc822.org", adapter->no);
 	}
-#endif
 
-	logwrite(LOG_DEBUG, "fe: adapter %d type %s name \"%s\"", adapter->no, type, adapter->fe.feinfo.name);
-	logwrite(LOG_DEBUG, "fe: adapter %d ", adapter->no);
+	logwrite(LOG_DEBUG, "fe: adapter %d type %s name \"%s\"",
+				adapter->no,
+				type,
+				adapter->fe.feinfo.name);
+
 	logwrite(LOG_DEBUG, "fe: adapter %d frequency min %d max %d step %d tolerance %d",
 				adapter->no,
 				adapter->fe.feinfo.frequency_min,
 				adapter->fe.feinfo.frequency_max,
-#ifdef MULTIPROTO
-				adapter->fe.feinfo.frequency_step,
-#else
 				adapter->fe.feinfo.frequency_stepsize,
-#endif
 				adapter->fe.feinfo.frequency_tolerance);
 
 	logwrite(LOG_DEBUG, "fe: adapter %d symbol rate min %d max %d tolerance %d",
@@ -475,6 +501,7 @@ static void fe_checkcap(struct adapter_s *adapter) {
 				adapter->fe.feinfo.symbol_rate_max,
 				adapter->fe.feinfo.symbol_rate_tolerance);
 }
+#endif
 
 int fe_tune_init(struct adapter_s *adapter) {
 	char		fename[128];
