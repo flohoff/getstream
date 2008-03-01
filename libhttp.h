@@ -55,6 +55,7 @@ struct http_connection {
 				cid,
 				request;
 	struct bufferevent	*bev;
+	struct evbuffer		*evb;
 	int			keepalive;
 
 	/* Request information */

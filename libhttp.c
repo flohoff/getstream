@@ -223,37 +223,31 @@ size_t http_get_queue(struct http_connection *hc) {
  *
  */
 int http_return_stream(struct http_connection *hc, void *data, size_t datalen) {
-	struct evbuffer *evb;
-
-	evb=evbuffer_new();
-
 	/* We are chunked and done sending - end session */
 	if (!data) {
 		/* Chunked transfer - send a 0 chunk */
 		if (hc->proto == HP_HTTP11) {
-			evbuffer_add_printf(evb,"0\r\n\r\n");
-			bufferevent_write_buffer(hc->bev, evb);
+			evbuffer_add_printf(hc->evb,"0\r\n\r\n");
+			bufferevent_write_buffer(hc->bev, hc->evb);
 		}
-		evbuffer_free(evb);
 		hc->status=HC_STATUS_END;
 		return 1;
 	}
 
 	/* In case of Transfer-Encoding: chunked send a chunk - otherwise just data */
 	if (hc->proto == HP_HTTP11) {
-		evbuffer_add_printf(evb,"%x\r\n", datalen);
-		evbuffer_add(evb, data, datalen);
-		evbuffer_add_printf(evb, "\r\n");
+		evbuffer_add_printf(hc->evb,"%x\r\n", datalen);
+		evbuffer_add(hc->evb, data, datalen);
+		evbuffer_add_printf(hc->evb, "\r\n");
 	} else {
-		evbuffer_add(evb, data, datalen);
+		evbuffer_add(hc->evb, data, datalen);
 	}
 
-	bufferevent_write_buffer(hc->bev, evb);
+	bufferevent_write_buffer(hc->bev, hc->evb);
 
 	Dprintf("%s: output buffer len %d\n", __FUNCTION__,
 			EVBUFFER_LENGTH(hc->bev->output));
 
-	evbuffer_free(evb);
 	return 1;
 }
 
@@ -428,15 +422,19 @@ static void http_request_free(struct http_connection *hc) {
 void http_drop_connection(struct http_connection *hc) {
 	struct http_server	*hs=hc->server;
 
-	http_request_free(hc);
-
 	Dprintf("%s:%d\n", __FUNCTION__, __LINE__);
 	hs->conn=g_list_remove(hs->conn, hc);
 
 	bufferevent_disable(hc->bev, EV_READ|EV_WRITE);
 	bufferevent_free(hc->bev);
 
+	http_request_free(hc);
+
 	close(hc->fd);
+
+	evbuffer_free(hc->evb);
+
+	free(hc);
 }
 
 /*
@@ -518,6 +516,7 @@ static void http_connect(int fd, short ev, void *arg) {
 	hc->server=hs;
 	hc->status=HC_STATUS_HEAD;
 	hc->cid=hs->cid++;
+	hc->evb=evbuffer_new();
 
 	/* Copy remote endpoint sockaddr to http_connection structure */
 	memcpy(&hc->sin, &sin, sizeof(struct sockaddr_in));
