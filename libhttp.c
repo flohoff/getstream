@@ -469,7 +469,7 @@ static void http_cb_read(struct bufferevent *bev, void *arg) {
 			break;
 		case(HC_STATUS_HEAD):
 			if (!http_read_head(hc, bev))
-				http_drop_connection(hc);
+				hc->url_handler(hc, HCB_ERROR, hc->arg);
 			break;
 		case(HC_STATUS_BODY):
 			hc->url_handler(hc, HCB_READ, hc->arg);
