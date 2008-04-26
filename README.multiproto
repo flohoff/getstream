@@ -1,0 +1,11 @@
+
+Multiproto is still a moving target and incompatible API changes have
+been introduced on a regular basis. Getstream has been known to work
+with multiproto at specific releases. To compile against multiproto copy
+the include directory named "linux" to the getstream build directory
+and name it "linux". The getstream build should then build against the
+multiproto header.
+
+	flo@stream:~/multiproto$ cp -ra linux/include/linux ~/getstream2/
+
+Be sure to make clean before building a new multiproto enabled getstream.
