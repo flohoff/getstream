@@ -30,6 +30,7 @@
 #define IOCTL_GET_EVENT		DVBFE_GET_EVENT
 #define IOCTL_GET_INFO		DVBFE_GET_INFO
 #define IOCTL_SET_FE		DVBFE_SET_PARAMS
+#define IOCTL_SET_DELSYS	DVBFE_SET_DELSYS
 #define FE_GET_STATUS(a)	((a).fe_events.status)
 
 #define DVB_SET_DELIVERY(a, b)		(a)->delivery=(b);

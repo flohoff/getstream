@@ -415,10 +415,13 @@ static void fe_event(int fd, short ev, void *arg) {
 
 static void fe_checkcap(struct adapter_s *adapter) {
 
-	/* adapter->type is set to DVBFE_DELSYS_*, see getstream.h.
-	 * this avoids another tedious case switch. ioctl returns
-	 * -ENOTSUPP if wrong delivery is selected */
-	adapter->fe.feinfo.delivery = adapter->type;
+	/* With multiproto API changes from 2008-03-09 one has to set the
+	 * delsys before anything else
+	 */
+	if (ioctl(adapter->fe.fd, IOCTL_SET_DELSYS, &adapter->type)) {
+		logwrite(LOG_ERROR, "fe: failed to set delivery system with IOCTL_SET_DELSYS with %s", strerror(errno));
+		exit(-1);
+	}
 
 	if (ioctl(adapter->fe.fd, IOCTL_GET_INFO, &adapter->fe.feinfo)) {
 		logwrite(LOG_ERROR, "fe: ioctl(DVBFE_GET_INFO...) failed");
