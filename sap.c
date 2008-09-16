@@ -86,12 +86,12 @@ static void sap_send(int fd, short event, void *arg) {
 	sp=sappkt+8;
 
 	sp+=sprintf(sp, "v=0\r\n");
+	sp+=sprintf(sp, "o=%s\r\n", sap->odata);
 	if (sap->output->stream->name)
 		sp+=sprintf(sp, "s=%s\r\n", sap->output->stream->name);
 	sp+=sprintf(sp, "t=0 0\r\n");
 	sp+=sprintf(sp, "a=tool:getstream\r\n");
 	sp+=sprintf(sp, "a=type:broadcast\r\n");
-	sp+=sprintf(sp, "o=%s\r\n", sap->odata);
 	sp+=sprintf(sp, "m=%s\r\n", sap->mdata);
 	sp+=sprintf(sp, "c=%s\r\n", sap->cdata);
 
