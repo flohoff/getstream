@@ -501,7 +501,7 @@ static inline unsigned int ts_has_af(uint8_t *tsp) {
 }
 
 static inline unsigned int ts_af_len(uint8_t *tsp) {
-	return (ts_has_af(tsp) ? tsp[TS_AFC_LEN] : 0);
+	return (ts_has_af(tsp) ? tsp[TS_AFC_LEN]+1 : 0);
 }
 
 static inline unsigned int ts_payload_start(uint8_t *tsp) {
