@@ -87,6 +87,7 @@
 #define PSI_RC_CRCFAIL		-4
 #define PSI_RC_CCFAIL		-5
 #define PSI_RC_LENFAIL		-6
+#define PSI_RC_CORRUPT		-7
 
 
 struct psisec_s {

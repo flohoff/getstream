@@ -153,6 +153,9 @@ int psi_reassemble(struct psisec_s *section, uint8_t *ts, int off) {
 		 */
 		if (ts_pusi(ts))
 			payload+=ts[payload]+1;
+
+		if (payload >= TS_PACKET_SIZE)
+			return PSI_RC_CORRUPT;
 	}
 
 	/* If we dont have a Payload Unit Start Indicator and we already
