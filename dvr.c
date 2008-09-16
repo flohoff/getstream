@@ -65,7 +65,7 @@ static inline void dvr_input_ts(struct adapter_s *a, uint8_t *ts) {
 	/* FIXME This is ugly to have the same list with different users */
 	if (a->dvr.pidtable[pid].secuser) {
 		int	off=0;
-		while(1) {
+		while(off < TS_PACKET_SIZE) {
 			off=psi_reassemble(a->dvr.pidtable[pid].section, ts, off);
 
 			if (off<0)

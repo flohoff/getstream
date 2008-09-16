@@ -147,7 +147,7 @@ void tsd_pat_section_dump(struct psisec_s *s) {
 
 void tsd_pat(uint8_t *ts, uint16_t pid) {
 	int		off=0;
-	while(42) {
+	while(off < TS_PACKET_SIZE) {
 		off=psi_reassemble(&patsec, ts, off);
 
 		if (off < 0)

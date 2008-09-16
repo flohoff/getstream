@@ -181,7 +181,7 @@ int psi_reassemble(struct psisec_s *section, uint8_t *ts, int off) {
 	if (!psi_crc_valid(section))
 		return PSI_RC_CRCFAIL;
 
-	return (noff >= TS_PACKET_SIZE) ? 0 : noff;
+	return noff;
 }
 
 int psi_section_valid(unsigned int pid, struct psisec_s *section, int len) {
