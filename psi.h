@@ -110,7 +110,7 @@ struct psi_s {
  */
 
 #define _psi_version(data) \
-		(data[PSI_VERSION_OFF]&PSI_VERSION_MASK>>PSI_VERSION_SHIFT)
+		((data[PSI_VERSION_OFF]&PSI_VERSION_MASK)>>PSI_VERSION_SHIFT)
 #define psi_version(section) \
 		_psi_version(section->data)
 
