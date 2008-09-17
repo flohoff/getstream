@@ -227,7 +227,7 @@ static char *sap_init_odata(struct sap_s *sap) {
 	switch(sap->output->type) {
 		case(OTYPE_UDP):
 		case(OTYPE_RTP):
-			sprintf(odata, "- %x %lu IN IP4 %s",
+			sprintf(odata, "- %d %lu IN IP4 %s",
 				sap->sid,
 				time(NULL),
 				sap->output->remoteaddr);
@@ -240,7 +240,7 @@ static char *sap_init_odata(struct sap_s *sap) {
 				char	hname[80];
 
 				gethostname(hname, sizeof(hname));
-				sprintf(odata, "- %x %lu IN IP4 %s",
+				sprintf(odata, "- %d %lu IN IP4 %s",
 						sap->sid,
 						time(NULL),
 						hname);
