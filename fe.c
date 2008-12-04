@@ -132,12 +132,30 @@ static int fe_tune_dvbs(struct adapter_s *adapter) {
 	voltage=(adapter->fe.dvbs.t_pol == POL_H) ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13;
 
 	if (adapter->fe.dvbs.t_freq > 2200000) {
-		if (adapter->fe.dvbs.t_freq < adapter->fe.dvbs.lnb_slof) {
-			feparams.frequency=(adapter->fe.dvbs.t_freq-adapter->fe.dvbs.lnb_lof1);
-			tone = SEC_TONE_OFF;
+		if (adapter->fe.dvbs.lnb_slof) {
+			/* Ku Band LNB */
+			if (adapter->fe.dvbs.t_freq < adapter->fe.dvbs.lnb_slof) {
+				feparams.frequency=(adapter->fe.dvbs.t_freq-
+						adapter->fe.dvbs.lnb_lof1);
+				tone = SEC_TONE_OFF;
+			} else {
+				feparams.frequency=(adapter->fe.dvbs.t_freq-
+						adapter->fe.dvbs.lnb_lof2);
+				tone = SEC_TONE_ON;
+			}
 		} else {
-			feparams.frequency=(adapter->fe.dvbs.t_freq-adapter->fe.dvbs.lnb_lof2);
-			tone = SEC_TONE_ON;
+			/* C Band LNB */
+			if (adapter->fe.dvbs.lnb_lof2) {
+				if (adapter->fe.dvbs.t_pol == POL_H) {
+					feparams.frequency=(adapter->fe.dvbs.lnb_lof2-
+						adapter->fe.dvbs.t_freq);
+				} else {
+					feparams.frequency=(adapter->fe.dvbs.lnb_lof1-
+						adapter->fe.dvbs.t_freq);
+				}
+			} else {
+				feparams.frequency=adapter->fe.dvbs.lnb_lof1-adapter->fe.dvbs.t_freq;
+			}
 		}
 	} else {
 		feparams.frequency=adapter->fe.dvbs.t_freq;

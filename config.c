@@ -278,8 +278,8 @@ static int cf_dvbs_lnb_slof(struct lc_centry *ce, struct lc_value *val)
 
 static struct lc_ventry conf_dvbs_lnb[] = {
 	{ "lof1", 1, 1, LCV_NUM, 0, NULL, cf_dvbs_lnb_lof1 },
-	{ "lof2", 1, 1, LCV_NUM, 0, NULL, cf_dvbs_lnb_lof2 },
-	{ "slof", 1, 1, LCV_NUM, 0, NULL, cf_dvbs_lnb_slof },
+	{ "lof2", 0, 1, LCV_NUM, 0, NULL, cf_dvbs_lnb_lof2 },
+	{ "slof", 0, 1, LCV_NUM, 0, NULL, cf_dvbs_lnb_slof },
 	{ NULL, 0, 0, 0, 0, NULL },
 };
 

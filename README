@@ -92,7 +92,8 @@ Configuration:
 
 	lnb
 		The config needs to match your LNB (Low Now Block
-		converter) on your Dish:
+		converter) on your Dish - If you have a Ku Band LNB (Normal for
+		most of the World) you need these informations:
 
 		lof1 	- Local osscilator frequency 1 (Low Band)
 		lof2	- Local osscilator frequency 2 (High Band)
@@ -100,6 +101,10 @@ Configuration:
 
 		If the transponder frequency is above the slof getstream enables
 		the 22Khz Pilot tone to switch the LNB to High Band.
+
+		If you have a C Band LNB you dont have a slof so dont configure it.
+		If you have a multipoint C Band LNB you have lof1 and lof2 in case
+		you dont just configure the lof1.
 
 	Transponder:
 		frequency	- Frequency of the Transponder in hz.
