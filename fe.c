@@ -18,47 +18,78 @@ struct diseqc_cmd {
 	uint32_t wait;
 };
 
-void diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
-		fe_sec_tone_mode_t t, fe_sec_mini_cmd_t b) {
+struct diseqc_cmd switch_cmds[] = {
+	{ { { 0xe0, 0x10, 0x38, 0xf0, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xf2, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xf1, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xf3, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xf4, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xf6, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xf5, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xf7, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xf8, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xfa, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xf9, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xfb, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xfc, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xfe, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xfd, 0x00, 0x00 }, 4 }, 0 },
+	{ { { 0xe0, 0x10, 0x38, 0xff, 0x00, 0x00 }, 4 }, 0 }
+};
 
-	ioctl(fd, FE_SET_TONE, SEC_TONE_OFF);
-	ioctl(fd, FE_SET_VOLTAGE, v);
-	usleep(15 * 1000);
+static inline void msleep(uint32_t msec)
+{
+	struct timespec req = { msec / 1000, 1000000 * (msec % 1000) };
 
-	ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd);
-	usleep(cmd->wait * 1000);
-	usleep(15 * 1000);
-
-	ioctl(fd, FE_DISEQC_SEND_BURST, b);
-	usleep(15 * 1000);
-
-	ioctl(fd, FE_SET_TONE, t);
+	while (nanosleep(&req, &req))
+		;
 }
 
-/*
- * DIgital Satellite Equipment Control,
- * Specification is available from http://www.eutelsat.com/
- */
-static int head_diseqc(int secfd, int satno, int voltage, int tone) {
-	struct diseqc_cmd cmd = { {{0xe0, 0x10, 0x38, 0xf0, 0x00, 0x00}, 4}, 0 };
+int diseqc_send_msg (int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, fe_sec_tone_mode_t t, fe_sec_mini_cmd_t b) {
+	int err;
 
-	/*
-	 * param: high nibble: reset bits, low nibble set bits,
-	 * bits are: option, position, polarizaion, band
-	 */
-	cmd.cmd.msg[3] = 0xf0 |
-		(((satno * 4) & 0x0f) |
-		(voltage == SEC_VOLTAGE_13 ? 1 : 0) |
-		(tone == SEC_TONE_ON ? 0 : 2));
+	if ((err = ioctl(fd, FE_SET_TONE, SEC_TONE_OFF)))
+		return err;
 
-	diseqc_send_msg(secfd,
-			voltage,
-			&cmd,
-			tone,
-			(satno / 4) % 2 ? SEC_MINI_B : SEC_MINI_A);
+	if ((err = ioctl(fd, FE_SET_VOLTAGE, v)))
+		return err;
 
-	return 1;
+	msleep(15);
+	while (*cmd) {
+		if ((err = ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &(*cmd)->cmd)))
+			return err;
+
+		msleep((*cmd)->wait);
+		cmd++;
+	}
+
+	msleep(15);
+
+	if ((err = ioctl(fd, FE_DISEQC_SEND_BURST, b)))
+		return err;
+
+	msleep(15);
+
+	return ioctl(fd, FE_SET_TONE, t);
 }
+
+
+int setup_switch (int frontend_fd, int switch_pos, int voltage_18, int hiband) {
+	struct diseqc_cmd *cmd[2] = { NULL, NULL };
+	int i = 4 * switch_pos + 2 * hiband + (voltage_18 ? 1 : 0);
+
+	if (i < 0 || i >= (int) (sizeof(switch_cmds)/sizeof(struct diseqc_cmd)))
+		return -EINVAL;
+
+	cmd[0] = &switch_cmds[i];
+
+	return diseqc_send_msg (frontend_fd,
+				i % 2 ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13,
+				cmd,
+				(i/2) % 2 ? SEC_TONE_ON : SEC_TONE_OFF,
+				(i/4) % 2 ? SEC_MINI_B : SEC_MINI_A);
+}
+
 
 /*
  * Dump FrontEnd Status byte as clear text returned
@@ -90,11 +121,11 @@ char *fe_decode_status(int status) {
 		str[strlen(str)-1]=0x0;
 
 	return str;
-}
+};
 
 static int fe_tune_dvbs(struct adapter_s *adapter) {
 	FE_PARAM	feparams;
-	int		voltage, tone, i;
+	int		voltage, tone=SEC_TONE_OFF;
 
 	memset(&feparams, 0, sizeof(FE_PARAM));
 
@@ -150,17 +181,12 @@ static int fe_tune_dvbs(struct adapter_s *adapter) {
 			}
 		}
 	} else if (adapter->fe.dvbs.t_diseqc) {
-		for(i=0;i<=1;i++) {
-			logwrite(LOG_DEBUG, "fe: diseqc sending command %d", i);
-
-			if (!head_diseqc(adapter->fe.fd, adapter->fe.dvbs.t_diseqc-1, voltage, tone)) {
-				logwrite(LOG_ERROR, "fe: diseqc failed to send");
-				exit(-1);
-			}
-
-			logwrite(LOG_DEBUG, "fe: diseqc send successful");
-			sleep(1);
+		if (setup_switch(adapter->fe.fd, adapter->fe.dvbs.t_diseqc-1, voltage, (tone == SEC_TONE_ON))) {
+			logwrite(LOG_ERROR, "fe: diseqc failed to send");
+			exit(-1);
 		}
+		logwrite(LOG_DEBUG, "fe: diseqc send successful");
+		sleep(1);
 	} else {
 		if (ioctl(adapter->fe.fd, FE_SET_VOLTAGE, voltage) < 0) {
 			logwrite(LOG_ERROR, "fe: ioctl FE_SET_VOLTAGE failed - %s", strerror(errno));
