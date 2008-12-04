@@ -1,0 +1,62 @@
+
+http {
+	port 8001;
+};
+
+adapter 0 {
+	packet-buffer 50;
+	stat-interval 120;
+
+	dvb-s {
+		lnb {
+			lof1 9750000;
+			lof2 10600000;
+			slof 11700000;
+		};
+
+		transponder {
+			frequency 11836500;
+			polarisation h;
+			symbol-rate 27500000;
+		};
+	};
+
+	stream {
+		name "Das Erste";
+		input {
+			pnr 28106;
+		};
+		output-http {
+			url /tv/daserste;
+		};
+	};
+};
+
+adapter 1 {
+	packet-buffer 50;
+	stat-interval 120;
+
+	dvb-s {
+		lnb {
+			lof1 9750000;
+			lof2 10600000;
+			slof 11700000;
+		};
+
+		transponder {
+			frequency 12266000;
+			polarisation h;
+			symbol-rate 27500000;
+		};
+	};
+
+	stream {
+		name 88acht;
+		input {
+			pnr 0x6f27;
+		};
+		output-http {
+			url /radio/88acht;
+		};
+	};
+};

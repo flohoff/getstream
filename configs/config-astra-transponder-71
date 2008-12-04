@@ -1,0 +1,127 @@
+
+http {
+	port 8001;
+};
+
+adapter 1 {
+	packet-buffer 50;
+	stat-interval 120;
+
+	dvb-s {
+		lnb {
+			lof1 9750000;
+			lof2 10600000;
+			slof 11700000;
+		};
+
+		transponder {
+			frequency 11836500;
+			polarisation h;
+			symbol-rate 27500000;
+		};
+	};
+
+	stream {
+		name "transponder-71-management";
+		input {
+			pid 0x0;
+			pid 0x10;
+			pid 0x11;
+			pid 0x12;
+			pid 0x13;
+			pid 0x14;
+		};
+		output-pipe {
+			filename "/tmp/transponder-71";
+		};
+	};
+
+	stream {
+		name "Das Erste";
+		input {
+			pnr 28106;
+		};
+		output-http {
+			url /tv/daserste;
+		};
+		output-udp {
+			remote-address 239.0.71.1;
+			remote-port 3000;
+			sap {
+				scope global;
+				ttl 4;
+				playgroup "FIFA WM";
+			};
+		};
+	};
+
+	stream {
+		name "arte";
+		input {
+			pnr 28109;
+		};
+		output-http {
+			url /tv/arte;
+		};
+	};
+
+	stream {
+		name "Bayerisches Fernsehen";
+		input {
+			pnr 28107;
+		};
+		output-http {
+			url /tv/br;
+		};
+	};
+
+	stream {
+		name "Bayern alpha";
+		input {
+			pnr 28112;
+		};
+		output-http {
+			url /tv/bayernalpha;
+		};
+	};
+
+	stream {
+		name "hr-fernsehen";
+		input {
+			pnr 28108;
+		};
+		output-http {
+			url /tv/hr;
+		};
+	};
+
+	stream {
+		name "Phoenix";
+		input {
+			pnr 28114;
+		};
+		output-http {
+			url /tv/phoenix;
+		};
+	};
+
+	stream {
+		name "Suedwest Fernsehen SW";
+		input {
+			pnr 28113;
+		};
+		output-http {
+			url /tv/sw;
+		};
+	};
+
+	stream {
+		name "WDR Fernsehen";
+		input {
+			pnr 28111;
+		};
+		output-http {
+			url /tv/wdr;
+		};
+	};
+};

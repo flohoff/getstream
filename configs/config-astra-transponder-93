@@ -1,0 +1,615 @@
+
+http {
+	port 8001;
+};
+
+adapter 1 {
+
+	packet-buffer 50;
+	stat-interval 120;
+
+	dvb-s {
+		lnb {
+			lof1 9750000;
+			lof2 10600000;
+			slof 11700000;
+		};
+
+		transponder {
+			frequency 12266000;
+			polarisation h;
+			symbol-rate 27500000;
+		};
+	};
+
+# 	stream {
+# 		name epg;
+# 		input {
+# 			pid 0x10;
+# 			pid 0x11;
+# 			pid 0x12;
+# 		};
+# 		output-pipe {
+# 			filename "/tmp/epg";
+# 		};
+# 	};
+
+	stream {
+		name 88acht;
+		input {
+			pnr 0x6f27;
+		};
+		output-http {
+			url /radio/88acht;
+		};
+# 		output-pipe {
+# 			filename "/tmp/88acht";
+# 		};
+	};
+
+	stream {
+		name "Antenne Brandenburg";
+		input {
+			pnr 28454;
+		};
+ 		output-http {
+ 			url /radio/antennebrandenburg;
+ 		};
+	};
+
+	stream {
+		name "B5 Aktuell";
+		input {
+			pnr 28404;
+		};
+		output-http {
+			url "/radio/b5aktuell";
+		};
+	};
+
+	stream {
+		name "Bayern 1";
+		input {
+			pnr 28400;
+		};
+		output-http {
+			url "/radio/bayern1";
+		};
+	};
+
+	stream {
+		name "Bayern 2";
+		input {
+			pnr 28401;
+		};
+		output-http {
+			url "/radio/bayern2";
+		};
+	};
+
+	stream {
+		name "Bayern 3";
+		input {
+			pnr 28402;
+		};
+		output-http {
+			url "/radio/bayern3";
+		};
+	};
+
+	stream {
+		name "Bayern 4 Klassik";
+		input {
+			pnr 28403;
+		};
+		output-http {
+			url "/radio/bayern4klassik";
+		};
+	};
+
+	stream {
+		name "Bayern Mobil";
+		input {
+			pnr 28405;
+		};
+		output-http {
+			url "/radio/bayernmobil";
+		};
+	};
+
+	stream {
+		name "Bremen Eins";
+		input {
+			pnr 28448;
+		};
+		output-http {
+			url "/radio/bremeneins";
+		};
+	};
+
+	stream {
+		name "Bremen Vier";
+		input {
+			pnr 28450;
+		};
+		output-http {
+			url "/radio/bremenvier";
+		};
+	};
+
+	stream {
+		name "BR Verkehr";
+		input {
+			pnr 28407;
+		};
+		output-http {
+			url "/radio/brverkehr";
+		};
+	};
+
+	stream {
+		name "Das Ding";
+		input {
+			pnr 28471;
+		};
+		output-http {
+			url "/radio/dasding";
+		};
+	};
+
+	stream {
+		name "Das Modul";
+		input {
+			pnr 28406;
+		};
+		output-http {
+			url "/radio/dasmodul";
+		};
+	};
+
+	stream {
+		name "Deutsche Welle 1";
+		input {
+			pnr 28416;
+		};
+		output-http {
+			url "/radio/deutschewelle1";
+		};
+	};
+
+	stream {
+		name "Deutsche Welle 4";
+		input {
+			pnr 28417;
+		};
+		output-http {
+			url "/radio/deutschewelle4";
+		};
+	};
+
+	stream {
+		name "Eins Live";
+		input {
+			pnr 28475;
+		};
+		output-http {
+			url "/radio/einslive";
+		};
+                output-udp {
+                        remote-address 239.0.71.1;
+                        remote-port 3000;
+                        sap {
+                                scope global;
+                                ttl 4;
+                                playgroup "ARD Radio";
+                        };
+                };
+	};
+
+	stream {
+		name "Eins Live diggi";
+		input {
+			pnr 0x6f41;
+		};
+		output-http {
+			url "/radio/einslivediggi";
+		};
+	};
+
+	stream {
+		name "Fritz!";
+		input {
+			pnr 28457;
+		};
+		output-http {
+			url "/radio/fritz";
+		};
+	};
+
+	stream {
+		name "hr1";
+		input {
+			pnr 28419;
+		};
+		output-http {
+			url "/radio/hr1";
+		};
+	};
+
+	stream {
+		name "hr2";
+		input {
+			pnr 28420;
+		};
+		output-http {
+			url "/radio/hr2";
+		};
+	};
+
+	stream {
+		name "hr3";
+		input {
+			pnr 28421;
+		};
+		output-http {
+			url "/radio/hr3";
+		};
+	};
+
+	stream {
+		name "hr4";
+		input {
+			pnr 28422;
+		};
+		output-http {
+			url "/radio/hr4";
+		};
+	};
+
+	stream {
+		name "hr info am";
+		input {
+			pnr 28425;
+		};
+		output-http {
+			url "/radio/hrinfoam";
+		};
+	};
+
+	stream {
+		name "hr info fm";
+		input {
+			pnr 28424;
+		};
+		output-http {
+			url "/radio/hrinfofm";
+		};
+	};
+
+	stream {
+		name "Info Radio";
+		input {
+			pnr 28452;
+		};
+		output-http {
+			url "/radio/inforadio";
+		};
+	};
+
+	stream {
+		name "Jump";
+		input {
+			pnr 28432;
+		};
+		output-http {
+			url "/radio/jump";
+		};
+	};
+
+	stream {
+		name "MDR 1";
+		input {
+			pnr 28428;
+		};
+		output-http {
+			url "/radio/mdr1";
+		};
+	};
+
+	# More MDR1 inbetween
+
+	stream {
+		name "MDR Figaro";
+		input {
+			pnr 28431;
+		};
+		output-http {
+			url "/radio/mdrfigaro";
+		};
+	};
+
+	stream {
+		name "MDR Info";
+		input {
+			pnr 28434;
+		};
+		output-http {
+			url "/radio/mdrinfo";
+		};
+	};
+
+	stream {
+		name "NDR 1";
+		input {
+			pnr 28444;
+		};
+		output-http {
+			url "/radio/ndr1";
+		};
+	};
+
+	stream {
+		name "NDR 2";
+		input {
+			pnr 28437;
+		};
+		output-http {
+			url "/radio/ndr2";
+		};
+	};
+
+	stream {
+		name "NDR 90,3";
+		input {
+			pnr 28441;
+		};
+		output-http {
+			url "/radio/ndr903";
+		};
+	};
+
+	stream {
+		name "NDR Info";
+		input {
+			pnr 28439;
+		}; 
+		output-http {
+			url "/radio/ndrinfo";
+		};
+	};
+
+	stream {
+		name "NDR Info Spezial";
+		input {
+			pnr 28445;
+		};
+		output-http {
+			url "/radio/ndrinfospezial";
+		};
+	};
+
+	stream {
+		name "NDR Kultur";
+		input {
+			pnr 28438;
+		};
+		output-http {
+			url "/radio/ndrkultur";
+		};
+	};
+
+	stream {
+		name "NordWestRadio";
+		input {
+			pnr 28449;
+		};
+		output-http {
+			url "/radio/nordwestradio";
+		};
+	};
+
+	stream {
+		name "N-Joy";
+		input {
+			pnr 28440;
+		};
+		output-http {
+			url "/radio/njoy";
+		};
+	};
+
+	stream {
+		name "Radio Eins";
+		input {
+			pnr 28456;
+		};
+		output-http {
+			url "/radio/radioeins";
+		};
+	};
+
+	stream {
+		name "RBB Kulturradio";
+		input {
+			pnr 28453;
+		};
+		output-http {
+			url "/radio/rbbkulturradio";
+		};
+	};
+
+	stream {
+		name "RBB RadioMultiKulti";
+		input {
+			pnr 28458;
+		};
+		output-http {
+			url "/radio/rbbradiomultikulti";
+		};
+	};
+
+	stream {
+		name "Sputnik";
+		input {
+			pnr 28433;
+		};
+		output-http {
+			url "/radio/sputnik";
+		};
+	};
+
+	stream {
+		name "SR 1 Europawelle";
+		input {
+			pnr 28461;
+		};
+		output-http {
+			url "/radio/sr1europawelle";
+		};
+	};
+
+	stream {
+		name "SR 2 KulturRadio";
+		input {
+			pnr 28462;
+		};
+		output-http {
+			url "/radio/sr2kulturradio";
+		};
+
+	};
+
+	stream {
+		name "SR 3 Saarlandwelle";
+		input {
+			pnr 28463;
+		};
+		output-http {
+			url "/radio/sr3saarlandwelle";
+		};
+	};
+
+	stream {
+		name "SWR 1 BW";
+		input {
+			pnr 28465;
+		};
+		output-http {
+			url "/radio/swr1bw";
+		};
+	};
+
+	# More SWR1
+
+	stream {
+		name "SWR 2";
+		input {
+			pnr 28467;
+		};
+		output-http {
+			url "/radio/swr2";
+		};
+	};
+
+	stream {
+		name "SWR 3";
+		input {
+			pnr 28468;
+		};
+		output-http {
+			url "/radio/swr3";
+		};
+	};
+
+	stream {
+		name "SWR 4 BW";
+		input {
+			pnr 28469;
+		};
+		output-http {
+			url "/radio/swr4bw";
+		};
+	};
+
+	# More SWR 
+
+	stream {
+		name "WDR 2";
+		input {
+			pnr 28476;
+		};
+		output-http {
+			url "/radio/wdr2";
+		};
+	};
+
+	stream {
+		name "WDR 2 Klassik";
+		input {
+			pnr 28482;
+		};
+		output-http {
+			url "/radio/wdr2klassik";
+		};
+	};
+
+	stream {
+		name "WDR 3";
+		input {
+			pnr 28477;
+		};
+		output-http {
+			url "/radio/wdr3";
+		};
+	};
+
+	stream {
+		name "WDR 4";
+		input {
+			pnr 28478;
+		};
+		output-http {
+			url "/radio/wdr4";
+		};
+	};
+
+	stream {
+		name "WDR 5";
+		input {
+			pnr 28479;
+		};
+		output-http {
+			url "/radio/wdr5";
+		};
+	};
+
+	stream {
+		name "WDR Event";
+		input {
+			pnr 28473;
+		};
+		output-http {
+			url "/radio/wdrevent";
+		};
+	};
+
+	stream {
+		name "WDR Funkhaus Europa";
+		input {
+			pnr 28480;
+		};
+		output-http {
+			url "/radio/wdrfunkhauseuropa";
+		};
+	};
+
+	stream {
+		name "You fm";
+		input {
+			pnr 28423;
+		};
+		output-http {
+			url "/radio/youfm";
+		};
+	};
+};

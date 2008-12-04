@@ -1,0 +1,42 @@
+
+http {
+	port 8000;
+};
+
+adapter 0 {
+# 	ZDF:570000000:INVERSION_AUTO:BANDWIDTH_8_MHZ:FEC_2_3:FEC_1_2:QAM_16:TRANSMISSION_MODE_8K:GUARD_INTERVAL_1_4:HIERARCHY_NONE:545:546:514
+# 	Info/3sat:570000000:INVERSION_AUTO:BANDWIDTH_8_MHZ:FEC_2_3:FEC_1_2:QAM_16:TRANSMISSION_MODE_8K:GUARD_INTERVAL_1_4:HIERARCHY_NONE:561:562:515
+# 	Doku/KiKa:570000000:INVERSION_AUTO:BANDWIDTH_8_MHZ:FEC_2_3:FEC_1_2:QAM_16:TRANSMISSION_MODE_8K:GUARD_INTERVAL_1_4:HIERARCHY_NONE:593:594:517
+
+	dvb-t {
+		frequency 570000000;
+		bandwidth 8;
+		transmission-mode auto;
+		guard-interval auto;
+		hierarchy none;
+		modulation auto;
+	};
+
+	channel 0x205 {
+		name "Doku/Kika";
+		stream-http {
+			url /205;
+		};
+	};
+
+	channel 0x203 {
+		name "Info/3Sat";
+		stream-http {
+			url /203;
+		};
+	};
+
+	channel 0x202 {
+		name "ZDF";
+		stream-http {
+			url /202;
+		};
+	};
+
+
+};

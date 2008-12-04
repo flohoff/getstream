@@ -1,0 +1,104 @@
+
+Building:
+	- Install libevent and glib
+	- Probably adapt paths in Makefile
+	- type "make"
+
+Configuration:
+
+  Adapter:
+  --------
+
+	  As getstream is supposed to support multiple adapters with the same
+	  program instance the configuration starts with an adapter clause:
+
+		  adapter 1 {
+			budget-mode	1;
+			packet-buffer	50;
+		  };
+
+	  - budget-mode
+		Set to "0" disabled the budget mode where getstream
+		request a seperate PID filter from the kernels filter. As
+		the filters are limited on the full featured cards
+		this is only a workaround and may work for 2-3 TV
+		Channels. Streaming a full transponder on a full featured
+		card is most certainly not possible.
+		Getstream automatically disables budget mode when setting
+		the filter for bit 0x2000 (Illegal value - tells kernel to
+		stream full transponder aka "budget-mode") and setting
+		the filter returns an error.
+
+	  - packet-buffer
+		Set the amount of packets getstream trys to get from the
+		kernels dvr interface. I see typically ~44 Packets/s per
+		round read from the kernel. Setting this too high just
+		wastes memory (a packet is 188 Bytes) setting it to low
+		creates more context-switches and will reduce performance.
+
+  Tuning or Card type:
+  --------------------
+
+  As getstream supports DVB-C, DVB-T and DVB-S and all need different
+  parameters for tuning in on the right transponder here is a short
+  introduction on how to enter the right parameters.
+
+  DVB-T:
+  -----
+    
+    There are 6 possible options to list for a DVB-T transponder:
+
+      frequency		- Frequency of transponder in Hz
+      bandwidth		- auto, 6 (6Mhz), 7 (7Mhz), 8 (8Mhz)
+      transmission-mode	- auto, 2 (2Khz), 8 (8Khz)
+      guard-interval	- auto, 4 (1/4), 8 (1/8), 16 (1/16), 32 (1/32)
+      hierarchy		- none, auto, 1, 2, 4
+      modulation	- auto, 16, 32, 64, 128, 256
+
+    Example:
+
+        dvb-t {
+          frequency 570000000;
+          bandwidth 8;
+          transmission-mode auto;
+          guard-interval auto;
+          hierarchy none;
+          modulation auto;
+        };
+
+
+
+  Channel
+    
+    A Channel is the definition of the program in the input transport stream
+    and its output streams. A channel contains at least a name and a single output
+    definition like "stream-http" "stream-rtp" or "stream-udp". The channel number after
+    the channel keyword is the Program Number as found in the PAT (Program Association Table)
+    at pid 0 of the transport stream.
+
+    name	- Channel name referred to in SAP announcements and debugging output
+    csa		- Content Scrambling config 
+
+    Example:
+
+      channel 28479 {
+        name "WDR 5";
+        stream-http {
+          url /radio/wdr5;
+        };
+      };
+
+  CSA
+  
+    Sometimes it might be necessary license wise to encrypt the content send out. To allow
+    encryption you may configure csa on the channel. You need to configure a key which is 
+    8 byte hex. You may configure an encryption length depending on your CPU resources. By
+    default this is the transport packet size of 188 byte.
+
+    Example:
+ 
+    csa {;
+      key 0x1234567812345678;
+      length 64;
+    }
+
