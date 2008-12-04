@@ -129,15 +129,7 @@ static int fe_tune_dvbs(struct adapter_s *adapter) {
 
 	memset(&feparams, 0, sizeof(FE_PARAM));
 
-	if (strcasecmp(adapter->fe.dvbs.t_pol, "h") == 0) {
-		voltage=SEC_VOLTAGE_18;
-	} else if(strcasecmp(adapter->fe.dvbs.t_pol, "v") == 0) {
-		voltage=SEC_VOLTAGE_13;
-	} else {
-		logwrite(LOG_ERROR, "fe: Unknown polarity \"%s\" in dvb-s transponder config",
-					adapter->fe.dvbs.t_pol);
-		exit(-1);
-	}
+	voltage=(adapter->fe.dvbs.t_pol == POL_H) ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13;
 
 	if (adapter->fe.dvbs.t_freq > 2200000) {
 		if (adapter->fe.dvbs.t_freq < adapter->fe.dvbs.lnb_slof) {

@@ -65,6 +65,11 @@ enum {
 	AT_DVBC
 };
 
+enum {
+	POL_H,
+	POL_V
+};
+
 #define FE_PARAM		struct dvb_frontend_parameters
 #define	FE_EVENT		struct dvb_frontend_event
 #define FE_INFO			struct dvb_frontend_info
@@ -251,7 +256,7 @@ struct adapter_s {
 				unsigned long	lnb_slof;
 
 				unsigned long	t_freq;
-				char		*t_pol;
+				int		t_pol;			/* POL_H || POL_V */
 				unsigned long	t_srate;
 				int		t_diseqc;
 			} dvbs;

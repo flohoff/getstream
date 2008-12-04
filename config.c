@@ -239,10 +239,21 @@ static struct lc_ventry conf_stream[] = {
 	{ NULL, 0, 0, 0, 0, NULL },
 };
 
+static int cf_dvbs_trans_pol(struct lc_centry *ce, struct lc_value *val) {
+	if (strcasecmp(val->string, "h") == 0) {
+		adapter->fe.dvbs.t_pol=POL_H;
+	} else if(strcasecmp(val->string, "v") == 0) {
+		adapter->fe.dvbs.t_pol=POL_V;
+	} else {
+		logwrite(LOG_ERROR, "Illegal polarization \"%s\" in line %d\n", val->string, ce->vline);
+		return 0;
+	}
+
+	return 1;
+}
+
 static int cf_dvbs_trans_freq(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->fe.dvbs.t_freq=val->num; return 1; }
-static int cf_dvbs_trans_pol(struct lc_centry *ce, struct lc_value *val)
-	{ adapter->fe.dvbs.t_pol=val->string; return 1; }
 static int cf_dvbs_trans_srate(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->fe.dvbs.t_srate=val->num; return 1; }
 static int cf_dvbs_trans_diseqc(struct lc_centry *ce, struct lc_value *val)
