@@ -25,6 +25,7 @@ static void output_remove_receiver(struct http_receiver_s *hr) {
 				hc->url);
 
 	http_drop_connection(hc);
+	free(hr);
 }
 
 static int output_cb_http(struct http_connection *hc, int cbtype, void *arg) {
