@@ -18,7 +18,7 @@ struct sappkt_s {
 
 struct sap_s {
 	/* Config items */
-	char			*scope;
+	int			scope;
 	char			*group;
 	int			port;
 
@@ -67,5 +67,13 @@ struct sap_s {
 #define SAP_MAX_SIZE	1024				/* As per RFC 2974 */
 
 int sap_init(struct sap_s *sap);
+
+enum {
+	SAP_SCOPE_NONE = 0,
+	SAP_SCOPE_GLOBAL,
+	SAP_SCOPE_ORG,
+	SAP_SCOPE_LOCAL,
+	SAP_SCOPE_LINK
+};
 
 #endif

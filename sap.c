@@ -157,27 +157,28 @@ static void sap_init_socket_single(struct sap_s *sap) {
 	port=SAP_PORT;
 
 	/* get SAP remote address from scope or group */
-	if (sap->scope) {
-		/* Most simple way - We have a scope */
-		if (strcasecmp(sap->scope, "global") == 0) {
+	switch(sap->scope) {
+		case(SAP_SCOPE_GLOBAL):
 			maddr=SAP_V4_GLOBAL_ADDRESS;
-		} else if(strcasecmp(sap->scope, "org") == 0) {
+			break;
+		case(SAP_SCOPE_ORG):
 			maddr=SAP_V4_ORG_ADDRESS;
-		} else if(strcasecmp(sap->scope, "local") == 0) {
+			break;
+		case(SAP_SCOPE_LOCAL):
 			maddr=SAP_V4_LOCAL_ADDRESS;
-		} else if(strcasecmp(sap->scope, "link") == 0) {
+			break;
+		case(SAP_SCOPE_LINK):
 			maddr=SAP_V4_LINK_ADDRESS;
-		}
-		port=SAP_PORT;
+			break;
+		case(SAP_SCOPE_NONE):
+			break;
 	}
 
-	if(sap->group) {
+	if(sap->group)
 		maddr=sap->group;
-	}
 
-	if(sap->port) {
+	if(sap->port)
 		port=sap->port;
-	}
 
 	if(sap->ttl >= 0) {
 		ttl = sap->ttl; /* use ttl value from sap config */

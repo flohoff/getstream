@@ -37,8 +37,23 @@ static int cf_adapter_start(struct lc_centry *ce, struct lc_value *val) {
 	return 1;
 }
 
-static int cf_sap_scope(struct lc_centry *ce, struct lc_value *val)
-	{ sap->scope=val->string; return 1; }
+static int cf_sap_scope(struct lc_centry *ce, struct lc_value *val) {
+
+	if (strcasecmp(val->string, "global") == 0) {
+		sap->scope=SAP_SCOPE_GLOBAL;
+	} else if(strcasecmp(val->string, "org") == 0) {
+		sap->scope=SAP_SCOPE_ORG;
+	} else if(strcasecmp(val->string, "local") == 0) {
+		sap->scope=SAP_SCOPE_LOCAL;
+	} else if(strcasecmp(val->string, "link") == 0) {
+		sap->scope=SAP_SCOPE_LINK;
+	} else {
+		logwrite(LOG_ERROR, "Illegal SAP scope \"%s\" in line %d\n", val->string, ce->vline);
+		return 0;
+	}
+
+	return 1;
+}
 static int cf_sap_sap_group(struct lc_centry *ce, struct lc_value *val)
 	{ sap->group=val->string; return 1; }
 static int cf_sap_sap_port(struct lc_centry *ce, struct lc_value *val)
