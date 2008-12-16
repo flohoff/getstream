@@ -65,6 +65,7 @@ static int	sid=1;			/* MSG Identifier - Unique for each session */
 static void sap_send(int fd, short event, void *arg) {
 	struct sap_s		*sap=arg;
 	char			*sp;
+	GList			*el, *pl, *al;
 
 	/* Clear Packet */
 	memset(&sappkt, 0, SAP_MAX_SIZE);
@@ -74,14 +75,11 @@ static void sap_send(int fd, short event, void *arg) {
 	sappkt[2]=sap->sid>>8&0xff;			/* Unique session ID */
 	sappkt[3]=sap->sid&0xff;
 
-	/*
-	 * FIXME - This would need to be the originating
-	 * not the destination address
-	 */
-	sappkt[4]=sap->addr&0xff;
-	sappkt[5]=sap->addr>>8&0xff;
-	sappkt[6]=sap->addr>>16&0xff;
-	sappkt[7]=sap->addr>>24&0xff;
+	/* Set originating address */
+	sappkt[4]=sap->originatingaddr&0xff;
+	sappkt[5]=sap->originatingaddr>>8&0xff;
+	sappkt[6]=sap->originatingaddr>>16&0xff;
+	sappkt[7]=sap->originatingaddr>>24&0xff;
 
 	sp=sappkt+8;
 
@@ -89,9 +87,33 @@ static void sap_send(int fd, short event, void *arg) {
 	sp+=sprintf(sp, "o=%s\r\n", sap->odata);
 	if (sap->output->stream->name)
 		sp+=sprintf(sp, "s=%s\r\n", sap->output->stream->name);
+	if (sap->description)
+		sp+=sprintf(sp, "i=%s\r\n", sap->description);
+	if (sap->uri)
+		sp+=sprintf(sp, "u=%s\r\n", sap->uri);
+
+	el=g_list_first(sap->emaillist);
+	while(el) {
+		char *email=el->data;
+		sp+=sprintf(sp, "e=%s\r\n", email);
+		el=g_list_next(el);
+	}
+
+	pl=g_list_first(sap->phonelist);
+	while(pl) {
+		char *phone=pl->data;
+		sp+=sprintf(sp, "p=%s\r\n", phone);
+		pl=g_list_next(pl);
+	}
+
 	sp+=sprintf(sp, "t=0 0\r\n");
-	sp+=sprintf(sp, "a=tool:getstream\r\n");
 	sp+=sprintf(sp, "a=type:broadcast\r\n");
+	al=g_list_first(sap->attributelist);
+	while(al) {
+		char *attribute=al->data;
+		sp+=sprintf(sp, "a=%s\r\n", attribute);
+		al=g_list_next(al);
+	}
 	sp+=sprintf(sp, "m=%s\r\n", sap->mdata);
 	sp+=sprintf(sp, "c=%s\r\n", sap->cdata);
 
@@ -112,7 +134,7 @@ static void sap_init_timer_single(struct sap_s *sap) {
 	 */
 
 	tv.tv_usec=0;
-	tv.tv_sec=1;
+	tv.tv_sec=sap->interval;
 
 	evtimer_set(&sap->event, &sap_send, sap);
 	evtimer_add(&sap->event, &tv);
@@ -121,6 +143,7 @@ static void sap_init_timer_single(struct sap_s *sap) {
 static void sap_init_socket_single(struct sap_s *sap) {
 	char		*maddr;
 	int		port;
+	int		ttl;
 
 	sap->fd=socket_open(NULL, 0);
 
@@ -142,18 +165,29 @@ static void sap_init_socket_single(struct sap_s *sap) {
 			maddr=SAP_V4_ORG_ADDRESS;
 		} else if(strcasecmp(sap->scope, "local") == 0) {
 			maddr=SAP_V4_LOCAL_ADDRESS;
-		} else {
+		} else if(strcasecmp(sap->scope, "link") == 0) {
 			maddr=SAP_V4_LINK_ADDRESS;
 		}
 		port=SAP_PORT;
-	} else if(sap->group) {
+	}
+
+	if(sap->group) {
 		maddr=sap->group;
+	}
+
+	if(sap->port) {
 		port=sap->port;
+	}
+
+	if(sap->ttl >= 0) {
+		ttl = sap->ttl; /* use ttl value from sap config */
+	} else {
+		ttl = sap->output->ttl; /* use ttl value form output config */
 	}
 
 	socket_join_multicast(sap->fd, maddr);
 	socket_connect(sap->fd, maddr, port);
-	socket_set_ttl(sap->fd, sap->ttl);
+	socket_set_ttl(sap->fd, ttl);
 }
 
 /* Create SDP Connection Data as per RFC2327 */
@@ -258,6 +292,13 @@ int sap_init(struct sap_s *sap) {
 	 * changes
 	 */
 	sap->sid=sid++;
+
+	/*
+	 * FIXME - This would need to be the originating
+	 * not the destination address
+	 */
+	if(sap->output->remoteaddr)
+		sap->originatingaddr=inet_addr(sap->output->remoteaddr);
 
 	/* Open Socket */
 	sap_init_socket_single(sap);

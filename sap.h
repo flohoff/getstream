@@ -26,6 +26,14 @@ struct sap_s {
 	int			announceport;
 	char			*playgroup;
 
+	int			interval;
+
+	char			*uri;
+	char			*description;
+	GList			*emaillist;
+	GList			*phonelist;
+	GList			*attributelist;
+
 	/* SAP socket port and address */
 	int			fd,
 				ttl;
@@ -38,7 +46,7 @@ struct sap_s {
 	char			*mdata;	/* Media Announcement Data RFC2327 */
 	char			*odata;	/* Origin Data RFC2327 */
 
-	uint32_t		addr;	/* For the SAP header */
+	uint32_t		originatingaddr; /* Originating Address for the SAP header */
 
 	struct output_s		*output;
 };

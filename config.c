@@ -45,12 +45,24 @@ static int cf_sap_sap_port(struct lc_centry *ce, struct lc_value *val)
 	{ sap->port=val->num; return 1; }
 static int cf_sap_ttl(struct lc_centry *ce, struct lc_value *val)
 	{ sap->ttl=val->num; return 1; }
+static int cf_sap_interval(struct lc_centry *ce, struct lc_value *val)
+	{ sap->interval=val->num; return 1; }
 static int cf_sap_playgroup(struct lc_centry *ce, struct lc_value *val)
 	{ sap->playgroup=val->string; return 1; }
 static int cf_sap_announce_host(struct lc_centry *ce, struct lc_value *val)
 	{ sap->announcehost=val->string; return 1; }
 static int cf_sap_announce_port(struct lc_centry *ce, struct lc_value *val)
 	{ sap->announceport=val->num; return 1; }
+static int cf_sap_uri(struct lc_centry *ce, struct lc_value *val)
+	{ sap->uri=val->string; return 1; }
+static int cf_sap_description(struct lc_centry *ce, struct lc_value *val)
+	{ sap->description=val->string; return 1; }
+static int cf_sap_email(struct lc_centry *ce, struct lc_value *val)
+	{ sap->emaillist=g_list_append(sap->emaillist, val->string); return 1; }
+static int cf_sap_phone(struct lc_centry *ce, struct lc_value *val)
+	{ sap->phonelist=g_list_append(sap->phonelist, val->string); return 1; }
+static int cf_sap_attribute(struct lc_centry *ce, struct lc_value *val)
+	{ sap->attributelist=g_list_append(sap->attributelist, val->string); return 1; }
 
 static int cf_output_remoteport(struct lc_centry *ce, struct lc_value *val)
 	{ output->remoteport=val->num; return 1; }
@@ -73,7 +85,8 @@ static int cf_sap_start(struct lc_centry *ce, struct lc_value *val) {
 	sap->output=output;
 
 	/* Default values */
-	sap->ttl=15;
+	sap->interval=1;
+	sap->ttl=-1; /* use the output stream's ttl */
 	return 1;
 }
 
@@ -136,7 +149,13 @@ struct lc_ventry conf_sap[] = {
 	{ "announce-host", 0, 1, LCV_STRING, 0, NULL, cf_sap_announce_host },
 	{ "announce-port", 0, 1, LCV_NUM, 0, NULL, cf_sap_announce_port },
 	{ "ttl", 0, 1, LCV_NUM, 0, NULL, cf_sap_ttl },
+	{ "interval", 0, 1, LCV_NUM, 0, NULL, cf_sap_interval },
 	{ "playgroup", 0, 1, LCV_STRING, 0, NULL, cf_sap_playgroup },
+	{ "uri", 0, 1, LCV_STRING, 0, NULL, cf_sap_uri },
+	{ "description", 0, 1, LCV_STRING, 0, NULL, cf_sap_description },
+	{ "email", 0, 0, LCV_STRING, 0, NULL, cf_sap_email },
+	{ "phone", 0, 0, LCV_STRING, 0, NULL, cf_sap_phone },
+	{ "attribute", 0, 0, LCV_STRING, 0, NULL, cf_sap_attribute },
 	{ NULL, 0, 0, 0, 0, NULL },
 };
 

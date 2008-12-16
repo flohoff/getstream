@@ -153,3 +153,42 @@ Configuration:
 	input {
 		full;
 	};
+
+  SAP:
+  ------
+	Can be used in the output-rtp and output-udp sections to send SAP announcements.
+
+	scope		- Multicast group which is used for the SAP announcemens.
+			  Possible values:
+			    global	- Global SAP address (224.2.127.254:9875) (default)
+			    org		- Organization-local SAP address (239.195.255.255:9875)
+			    local	- Local SAP address (239.255.255.255:9875)
+			    link	- Link-local SAP address (224.0.0.255:9875)
+
+	sap-group	- Multicast group address which is used for the SAP announcemens (overrides scope).
+	sap-port	- Port which is used for the SAP announcemens (overrides scope).
+	announce-host	- unused
+	announce-port	- unused
+	ttl		- TTL for the SAP announcemens.
+			  By default the output stream's TTL is used.
+	interval	- Announcement interval (in seconds) (default=1).
+	playgroup	- SAP/SDP group name.
+	uri		- An URI with additional information.
+	description	- Stream description.
+	email		- EMail contact information (can be used multiple times).
+	phone		- Phone contact information (can be used multiple times).
+	attribute	- Additional SDP attribute, see RFC2327 for details (can be used multiple times).
+
+	Example:
+	--------
+	sap {
+		scope global;
+		interval 5;
+		playgroup "TV";
+		description "Example TV stream";
+		uri "http://example.com";
+		email "<Bob Smith> bob@example.com";
+		phone "+49 555 555-555";
+		attribute "tool:getstream";
+		attribute "recvonly";
+	};
