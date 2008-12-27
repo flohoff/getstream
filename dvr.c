@@ -20,7 +20,7 @@
 
 #include "getstream.h"
 
-const char       *pidtnames[]={ "None", "PAT", "PMT", "PCR", "Video", "Audio", "Privat", "User", "Static", "Other" };
+const char       *pidtnames[]={ "None", "PAT", "PMT", "PCR", "Video", "Audio", "Privat", "User", "Static", "Reassemble", "Other" };
 
 struct pidcallback_s {
 	void		(*callback)(void *data, void *arg);
@@ -58,31 +58,9 @@ static inline void dvr_input_ts(struct adapter_s *a, uint8_t *ts) {
 	pid=ts_pid(ts);
 	a->dvr.pidtable[pid].packets++;
 
-	/* Does somebody want this pid ? */
-	if (!a->dvr.pidtable[pid].callback)
-		return;
-
-	/* FIXME This is ugly to have the same list with different users */
-	if (a->dvr.pidtable[pid].secuser) {
-		int	off=0;
-		while(off < TS_PACKET_SIZE) {
-			off=psi_reassemble(a->dvr.pidtable[pid].section, ts, off);
-
-			if (off<0)
-				break;
-
-			for(pcbl=g_list_first(a->dvr.pidtable[pid].callback);pcbl!=NULL;pcbl=g_list_next(pcbl)) {
-				struct pidcallback_s	*pcb=pcbl->data;
-				if (pcb->type == DVRCB_SECTION)
-					pcb->callback(a->dvr.pidtable[pid].section, pcb->arg);
-			}
-		}
-	}
-
 	for(pcbl=g_list_first(a->dvr.pidtable[pid].callback);pcbl!=NULL;pcbl=g_list_next(pcbl)) {
 		struct pidcallback_s	*pcb=pcbl->data;
-		if (pcb->type == DVRCB_TS)
-			pcb->callback(ts, pcb->arg);
+		pcb->callback(ts, pcb->arg);
 	}
 }
 
@@ -92,18 +70,51 @@ void dvr_del_pcb(struct adapter_s *a, unsigned int pid, void *vpcb) {
 	logwrite(LOG_DEBUG, "dvr: Del callback for PID %4d (0x%04x) type %d (%s)",
 			pid, pid, pcb->pidt, pidtnames[pcb->pidt]);
 
-	a->dvr.pidtable[pid].callback=g_list_remove(a->dvr.pidtable[pid].callback, pcb);
 
-	if (pcb->type == DVRCB_SECTION) {
-		a->dvr.pidtable[pid].secuser--;
-		if (!a->dvr.pidtable[pid].secuser)
-			psi_section_free(a->dvr.pidtable[pid].section);
+	switch(pcb->type) {
+		case(DVRCB_SECTION):
+			a->dvr.pidtable[pid].secuser--;
+
+			if (!a->dvr.pidtable[pid].secuser) {
+				/* RECURSION - We want the section so we need the TS */
+				dvr_del_pcb(a, pid, a->dvr.pidtable[pid].seccb);
+				a->dvr.pidtable[pid].seccb=NULL;
+			}
+
+			a->dvr.pidtable[pid].sectioncallback=
+				g_list_remove(a->dvr.pidtable[pid].sectioncallback, pcb);
+
+			break;
+		case(DVRCB_TS):
+			a->dvr.pidtable[pid].callback=
+				g_list_remove(a->dvr.pidtable[pid].callback, pcb);
+
+			if (!a->dvr.pidtable[pid].callback)
+				dmx_leave_pid(a, pid);
+
+			break;
 	}
 
 	free(pcb);
 
-	if (!a->dvr.pidtable[pid].callback)
-		dmx_leave_pid(a, pid);
+}
+
+void dvr_section_reassemble(void *ts, void *arg) {
+	struct dvrpt_s	*pidentry=arg;
+	int		off=0;
+	GList		*cbl;
+
+	while(off < TS_PACKET_SIZE) {
+		off=psi_reassemble(pidentry->section, ts, off);
+
+		if (off<0)
+			break;
+
+		for(cbl=g_list_first(pidentry->sectioncallback);cbl!=NULL;cbl=g_list_next(cbl)) {
+			struct pidcallback_s	*pcb=cbl->data;
+			pcb->callback(pidentry->section, pcb->arg);
+		}
+	}
 }
 
 void *dvr_add_pcb(struct adapter_s *a, unsigned int pid, unsigned int type,
@@ -129,16 +140,31 @@ void *dvr_add_pcb(struct adapter_s *a, unsigned int pid, unsigned int type,
 		return pcb;
 	}
 
-	if (type == DVRCB_SECTION) {
-		a->dvr.pidtable[pid].secuser++;
-		if (!a->dvr.pidtable[pid].section)
-			a->dvr.pidtable[pid].section=psi_section_new();
+	switch(type) {
+		case(DVRCB_SECTION):
+			if (!a->dvr.pidtable[pid].secuser) {
+				a->dvr.pidtable[pid].section=psi_section_new();
+
+				/* Recursion - SECTION needs the ts packets */
+				a->dvr.pidtable[pid].seccb=
+					dvr_add_pcb(a, pid, DVRCB_TS, PID_REASSEMBLE,
+					dvr_section_reassemble, &a->dvr.pidtable[pid]);
+			}
+
+			a->dvr.pidtable[pid].secuser++;
+
+			a->dvr.pidtable[pid].sectioncallback=
+				g_list_append(a->dvr.pidtable[pid].sectioncallback, pcb);
+
+			break;
+		case(DVRCB_TS):
+			if (!a->dvr.pidtable[pid].callback)
+				dmx_join_pid(a, pid, DMX_PES_OTHER);
+
+			a->dvr.pidtable[pid].callback=
+				g_list_append(a->dvr.pidtable[pid].callback, pcb);
+			break;
 	}
-
-	if (!a->dvr.pidtable[pid].callback)
-		dmx_join_pid(a, pid, DMX_PES_OTHER);
-
-	a->dvr.pidtable[pid].callback=g_list_append(a->dvr.pidtable[pid].callback, pcb);
 
 	return pcb;
 }

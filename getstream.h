@@ -182,6 +182,7 @@ enum {
 	PID_PRIVATE,
 	PID_USER,
 	PID_STATIC,
+	PID_REASSEMBLE,
 	PID_OTHER,
 };
 
@@ -230,6 +231,16 @@ struct stream_s {
 
 	uint8_t			patcc;
 	struct event		patevent;
+};
+
+struct dvrpt_s {
+	GList		*callback;
+	GList		*sectioncallback;
+	unsigned long	packets;
+
+	struct psisec_s	*section;
+	unsigned int	secuser;
+	void		*seccb;
 };
 
 struct adapter_s {
@@ -291,12 +302,7 @@ struct adapter_s {
 		/* List of full stream callbacks */
 		GList			*fullcb;
 
-		struct {
-			GList		*callback;
-			unsigned long	packets;
-			struct psisec_s	*section;
-			unsigned int	secuser;
-		} pidtable[PID_MAX+1];
+		struct dvrpt_s		pidtable[PID_MAX+1];
 
 		struct {
 			int		size;		/* Config option */
