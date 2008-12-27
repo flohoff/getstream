@@ -5,6 +5,7 @@
 
 #include "getstream.h"
 #include "psi.h"
+#include "crc32.h"
 
 struct programcb_s {
 	void		(*callback)(void *data, void *arg);

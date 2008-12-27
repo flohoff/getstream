@@ -7,6 +7,7 @@
 
 #include "getstream.h"
 #include "psi.h"
+#include "crc32.h"
 
 /*
  * PAT Programm Association Table

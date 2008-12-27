@@ -457,16 +457,6 @@ void *pmt_join_pnr(struct adapter_s *a, unsigned int pnr, \
 			void (*callback)(void *data, void *arg), void *arg);
 unsigned int pmt_get_pmtpid(void *program);
 
-/*
- *
- * crc32.c
- *
- */
-uint32_t crc32_le(uint32_t crc, unsigned char const *p, int len);
-uint32_t crc32_be(uint32_t crc, unsigned char const *p, int len);
-
-
-#define	CRC32_LEN		4
 #define PID_MASK	0x1fff
 
 #define TS_SYNC_OFF	0

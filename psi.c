@@ -3,6 +3,7 @@
 
 #include "getstream.h"
 #include "psi.h"
+#include "crc32.h"
 
 /*
  * PSI (Program Specific Information) handling
