@@ -100,7 +100,7 @@ static int cf_sap_start(struct lc_centry *ce, struct lc_value *val) {
 	sap->output=output;
 
 	/* Default values */
-	sap->interval=1;
+	sap->interval=10;
 	sap->ttl=-1; /* use the output stream's ttl */
 	return 1;
 }
