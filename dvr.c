@@ -197,7 +197,7 @@ static void dvr_read(int fd, short event, void *arg) {
 		/* Read returned error ? */
 		if (len < 0) {
 			if (errno != EAGAIN)
-				logwrite(LOG_ERROR, "demux: read in dvr_read returned with errno %d", errno);
+				logwrite(LOG_ERROR, "demux: read in dvr_read returned with errno %d / %s", errno, strerror(errno));
 			break;
 		}
 
