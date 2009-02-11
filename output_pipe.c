@@ -24,8 +24,9 @@
 #include "simplebuffer.h"
 #include "getstream.h"
 
-#define PIPE_MAX_TS			(2048/TS_PACKET_SIZE)
+#define PIPE_BUFFER			32768
 #define PIPE_INTERVAL			5
+#define PIPE_MAXEAGAIN			10
 
 static int output_pipe_tryopen(struct output_s *o) {
 	o->pipe.fd=open(o->pipe.filename, O_NONBLOCK|O_WRONLY);
@@ -33,6 +34,7 @@ static int output_pipe_tryopen(struct output_s *o) {
 	if (o->pipe.fd >= 0) {
 		logwrite(LOG_INFO, "stream_pipe: starting to write to %s - got reader", o->pipe.filename);
 		o->receiver++;
+		sb_zap(o->buffer);
 		return 1;
 	}
 
@@ -90,7 +92,7 @@ int output_init_pipe(struct output_s *o) {
 		}
 	}
 
-	o->buffer=sb_init(PIPE_MAX_TS, TS_PACKET_SIZE, 0);
+	o->buffer=sb_init(PIPE_BUFFER, 1, 0);
 
 	if (!o->buffer)
 		return 0;
@@ -105,33 +107,42 @@ int output_init_pipe(struct output_s *o) {
 void output_send_pipe(struct output_s *o, uint8_t *tsp) {
 	int	len;
 
-	sb_add_atoms(o->buffer, tsp, 1);
-
-	if (!sb_free_atoms(o->buffer)) {
-		len=write(o->pipe.fd, sb_bufptr(o->buffer), sb_buflen(o->buffer));
-
-		/*
-		 * We zap the buffer if we succeeded writing or not - there is no point
-		 * in keeping the data - If the reader aint fast enough there is no point
-		 * in buffering.
-		 */
-		sb_zap(o->buffer);
-
-		if (len < 0) {
-			logwrite(LOG_ERROR, "Pipe write returned %d / %s", errno, strerror(errno));
-			output_pipe_close(o);
-		}
-
-		/* FIXME - We might want to do more graceful here. We tried
-		 * writing multiple TS packets to the FIFO and it failed. We
-		 * now discard ALL packets in our buffer so we might loose some.
-		 * A more graceful way would be to retry writing - For this we
-		 * might need a different buffer design e.g. a ringbuffr
-		 *
-		 * Use libevent to get a callback when the reader is ready ?
-		 *
-		 */
+	if (sb_free_atoms(o->buffer) < TS_PACKET_SIZE) {
+		logwrite(LOG_ERROR, "stream_pipe: buffer overflow - dropping");
+		output_pipe_close(o);
+		return;
 	}
 
+	sb_add_atoms(o->buffer, tsp, TS_PACKET_SIZE);
+
+	len=write(o->pipe.fd, sb_bufptr(o->buffer), sb_buflen(o->buffer));
+
+	/*
+	 * We zap the buffer if we succeeded writing or not - there is no point
+	 * in keeping the data - If the reader aint fast enough there is no point
+	 * in buffering.
+	 */
+
+	if (len < 0) {
+		if (errno == EAGAIN) {
+			return;
+		}
+
+		logwrite(LOG_ERROR, "stream_pipe: write returned %d / %s", errno, strerror(errno));
+		output_pipe_close(o);
+		return;
+	}
+
+	sb_drop_atoms(o->buffer, len);
+
+	/* FIXME - We might want to do more graceful here. We tried
+	 * writing multiple TS packets to the FIFO and it failed. We
+	 * now discard ALL packets in our buffer so we might loose some.
+	 * A more graceful way would be to retry writing - For this we
+	 * might need a different buffer design e.g. a ringbuffr
+	 *
+	 * Use libevent to get a callback when the reader is ready ?
+	 *
+	 */
 }
 
