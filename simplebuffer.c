@@ -74,3 +74,13 @@ void sb_zap(void *sbv) {
 	struct simplebuffer_s *sb=sbv;
 	sb->fill=0;
 }
+
+void sb_drop_atoms(void *sbv, int atoms) {
+	struct simplebuffer_s *sb=sbv;
+
+	memmove(sb->buffer+sb->headroom,
+		sb->buffer+sb->headroom+atoms*sb->atomsize,
+		(sb->fill-atoms)*sb->atomsize);
+
+	sb->fill-=atoms;
+}
