@@ -118,9 +118,8 @@ void output_send_pipe(struct output_s *o, uint8_t *tsp) {
 		sb_zap(o->buffer);
 
 		if (len < 0) {
-			if (errno == EPIPE)
-				output_pipe_close(o);
-			return;
+			logwrite(LOG_ERROR, "Pipe write returned %d / %s", errno, strerror(errno));
+			output_pipe_close(o);
 		}
 
 		/* FIXME - We might want to do more graceful here. We tried
