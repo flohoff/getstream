@@ -72,6 +72,8 @@ int psi_reassemble_continue(struct psisec_s *section, uint8_t *ts, int off) {
 	memcpy(&section->data[section->valid], &ts[off], copylen);
 	section->valid+=copylen;
 
+	section->cc=cc;
+
 	return off+copylen;
 }
 
