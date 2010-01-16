@@ -217,6 +217,11 @@ static void pat_update(struct adapter_s *a) {
 	for(pl=g_list_first(current->program);pl;pl=g_list_next(pl)) {
 		pcur=pl->data;
 
+		if (pcur->pid == 0) {
+			logwrite(LOG_ERROR, "pat: Invalid PMT pid 0 for pnr %d", pcur->pnr);
+			continue;
+		}
+
 		/* Do we have a current PAT ? */
 		if (!last) {
 			pmt_pidfrompat(a, pcur->pnr, pcur->pid);
