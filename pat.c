@@ -175,7 +175,9 @@ struct pat_s *pat_parse(struct adapter_s *a) {
 		if (!s)
 			continue;
 
-		for(pnr=0;pnr<=pat_pnrno(s);pnr++) {
+		for(pnr=0;pnr<pat_pnrno(s);pnr++) {
+			if (pat_pnrfrompat(s, pnr) == 0)
+				continue;
 
 			pat_add_program(next,
 					pat_pnrfrompat(s, pnr),
