@@ -106,7 +106,7 @@ struct http_server	*hserver;
 
 int main(int argc, char **argv) {
 	extern char		*optarg;
-	char			ch;
+	int			ch;
 	int			timeout=0;
 	GList			*al;
 	struct config_s		*config=NULL;
