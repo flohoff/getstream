@@ -124,10 +124,10 @@ char *fe_decode_status(int status) {
 };
 
 static int fe_tune_dvbs(struct adapter_s *adapter) {
-	FE_PARAM	feparams;
-	int		voltage, tone=SEC_TONE_OFF;
+	struct dvb_frontend_parameters	feparams;
+	int				voltage, tone=SEC_TONE_OFF;
 
-	memset(&feparams, 0, sizeof(FE_PARAM));
+	memset(&feparams, 0, sizeof(struct dvb_frontend_parameters));
 
 	voltage=(adapter->fe.dvbs.t_pol == POL_H) ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13;
 
@@ -161,17 +161,10 @@ static int fe_tune_dvbs(struct adapter_s *adapter) {
 		feparams.frequency=adapter->fe.dvbs.t_freq;
 	}
 
-	feparams.inversion=DVBFE_INVERSION_AUTO;
+	feparams.inversion=INVERSION_AUTO;
 
-	if (adapter->type == AT_DVBS2) {
-		DVB_SET_DELIVERY(&feparams, DVBFE_DELSYS_DVBS2);
-		DVBS2_SET_SYMBOLRATE(&feparams, adapter->fe.dvbs.t_srate);
-		DVBS2_SET_FEC(&feparams, DVBFE_FEC_AUTO);
-	} else {
-		DVB_SET_DELIVERY(&feparams, DVBFE_DELSYS_DVBS);
-		DVBS_SET_SYMBOLRATE(&feparams, adapter->fe.dvbs.t_srate);
-		DVBS_SET_FEC(&feparams, DVBFE_FEC_AUTO);
-	}
+	DVBS_SET_SYMBOLRATE(&feparams, adapter->fe.dvbs.t_srate);
+	DVBS_SET_FEC(&feparams, FEC_AUTO);
 
 	if (adapter->fe.dvbs.lnbsharing) {
 		int value=SEC_TONE_OFF;
@@ -218,7 +211,7 @@ static int fe_tune_dvbs(struct adapter_s *adapter) {
 	logwrite(LOG_INFO, "fe: DVB-S feparams.inversion = %d", feparams.inversion);
 	logwrite(LOG_INFO, "fe: DVB-S feparams.u.qpsk.symbol_rate = %d", adapter->fe.dvbs.t_srate);
 
-	if (ioctl(adapter->fe.fd, IOCTL_SET_FE, &feparams) < 0) {
+	if (ioctl(adapter->fe.fd, FE_SET_FRONTEND, &feparams) < 0) {
 		logwrite(LOG_ERROR, "fe: ioctl FE_SET_FRONTEND failed - %s", strerror(errno));
 		exit(-1);
 	}
@@ -227,72 +220,70 @@ static int fe_tune_dvbs(struct adapter_s *adapter) {
 }
 
 int fe_tune_dvbt(struct adapter_s *adapter) {
-	FE_PARAM		feparams;
+	struct dvb_frontend_parameters		feparams;
 
-	memset(&feparams, 0, sizeof(FE_PARAM));
+	memset(&feparams, 0, sizeof(struct dvb_frontend_parameters));
 
 	feparams.frequency = adapter->fe.dvbt.freq;
 	feparams.inversion = INVERSION_AUTO;
 
-	DVB_SET_DELIVERY(&feparams, DVBFE_DELSYS_DVBT);
-
-	DVBT_SET_CODERATE_HP(&feparams, DVBFE_FEC_AUTO);
-	DVBT_SET_CODERATE_LP(&feparams, DVBFE_FEC_AUTO);
+	DVBT_SET_CODERATE_HP(&feparams, FEC_AUTO);
+	DVBT_SET_CODERATE_LP(&feparams, FEC_AUTO);
 
 	switch(adapter->fe.dvbt.bandwidth) {
-		case(0): DVBT_SET_BANDWIDTH(&feparams, DVBFE_BANDWIDTH_AUTO); break;
-		case(6): DVBT_SET_BANDWIDTH(&feparams, DVBFE_BANDWIDTH_6_MHZ); break;
-		case(7): DVBT_SET_BANDWIDTH(&feparams, DVBFE_BANDWIDTH_7_MHZ); break;
-		case(8): DVBT_SET_BANDWIDTH(&feparams, DVBFE_BANDWIDTH_8_MHZ); break;
+		case(0): DVBT_SET_BANDWIDTH(&feparams, BANDWIDTH_AUTO); break;
+		case(6): DVBT_SET_BANDWIDTH(&feparams, BANDWIDTH_6_MHZ); break;
+		case(7): DVBT_SET_BANDWIDTH(&feparams, BANDWIDTH_7_MHZ); break;
+		case(8): DVBT_SET_BANDWIDTH(&feparams, BANDWIDTH_8_MHZ); break;
 		default:
 			logwrite(LOG_ERROR, "fe: Unknown DVB-T bandwidth %d", adapter->fe.dvbt.bandwidth);
 			exit(-1);
 	}
 
 	switch(adapter->fe.dvbt.modulation) {
-		case(0): DVBT_SET_MODULATION(&feparams, DVBFE_MOD_QAMAUTO); break;
-		case(16):DVBT_SET_MODULATION(&feparams, DVBFE_MOD_QAM16); break;
-		case(32):DVBT_SET_MODULATION(&feparams, DVBFE_MOD_QAM32); break;
-		case(64):DVBT_SET_MODULATION(&feparams, DVBFE_MOD_QAM64); break;
-		case(128):DVBT_SET_MODULATION(&feparams, DVBFE_MOD_QAM128); break;
-		case(256):DVBT_SET_MODULATION(&feparams, DVBFE_MOD_QAM256); break;
+		case(0): DVBT_SET_MODULATION(&feparams, QAM_AUTO); break;
+		case(16):DVBT_SET_MODULATION(&feparams, QAM_16); break;
+		case(32):DVBT_SET_MODULATION(&feparams, QAM_32); break;
+		case(64):DVBT_SET_MODULATION(&feparams, QAM_64); break;
+		case(128):DVBT_SET_MODULATION(&feparams, QAM_128); break;
+		case(256):DVBT_SET_MODULATION(&feparams, QAM_256); break;
 		default:
 			logwrite(LOG_ERROR, "fe: Unknown DVB-T modulation %d", adapter->fe.dvbt.modulation);
 			exit(-1);
 	}
 
 	switch(adapter->fe.dvbt.tmode) {
-		case(0):DVBT_SET_TMODE(&feparams, DVBFE_TRANSMISSION_MODE_AUTO); break;
-		case(2):DVBT_SET_TMODE(&feparams, DVBFE_TRANSMISSION_MODE_2K); break;
-		case(8):DVBT_SET_TMODE(&feparams, DVBFE_TRANSMISSION_MODE_8K); break;
+		case(0):DVBT_SET_TMODE(&feparams, TRANSMISSION_MODE_AUTO); break;
+		case(2):DVBT_SET_TMODE(&feparams, TRANSMISSION_MODE_2K); break;
+		case(8):DVBT_SET_TMODE(&feparams, TRANSMISSION_MODE_8K); break;
 		default:
 			logwrite(LOG_ERROR, "fe: Unknown DVB-T transmission mode %d", adapter->fe.dvbt.tmode);
 			exit(-1);
 	}
 
 	switch(adapter->fe.dvbt.guard) {
-		case(0):DVBT_SET_GUARD(&feparams, DVBFE_GUARD_INTERVAL_AUTO); break;
-		case(4):DVBT_SET_GUARD(&feparams, DVBFE_GUARD_INTERVAL_1_4); break;
-		case(8):DVBT_SET_GUARD(&feparams, DVBFE_GUARD_INTERVAL_1_8); break;
-		case(16):DVBT_SET_GUARD(&feparams, DVBFE_GUARD_INTERVAL_1_16); break;
-		case(32):DVBT_SET_GUARD(&feparams, DVBFE_GUARD_INTERVAL_1_32); break;
+		case(0):DVBT_SET_GUARD(&feparams, GUARD_INTERVAL_AUTO); break;
+		case(4):DVBT_SET_GUARD(&feparams, GUARD_INTERVAL_1_4); break;
+		case(8):DVBT_SET_GUARD(&feparams, GUARD_INTERVAL_1_8); break;
+		case(16):DVBT_SET_GUARD(&feparams, GUARD_INTERVAL_1_16); break;
+		case(32):DVBT_SET_GUARD(&feparams, GUARD_INTERVAL_1_32); break;
 		default:
 			logwrite(LOG_ERROR, "fe: Unknown DVB-T guard interval %d", adapter->fe.dvbt.guard);
 			exit(-1);
 	}
 
 	switch(adapter->fe.dvbt.hierarchy) {
-		case(-1):DVBT_SET_HIERARCHY(&feparams, DVBFE_HIERARCHY_OFF); break;
-		case(0):DVBT_SET_HIERARCHY(&feparams, DVBFE_HIERARCHY_AUTO); break;
-		case(1):DVBT_SET_HIERARCHY(&feparams, DVBFE_HIERARCHY_1); break;
-		case(2):DVBT_SET_HIERARCHY(&feparams, DVBFE_HIERARCHY_2); break;
-		case(4):DVBT_SET_HIERARCHY(&feparams, DVBFE_HIERARCHY_4); break;
+		case(-1):DVBT_SET_HIERARCHY(&feparams, HIERARCHY_NONE); break;
+		case(0):DVBT_SET_HIERARCHY(&feparams, HIERARCHY_AUTO); break;
+		case(1):DVBT_SET_HIERARCHY(&feparams, HIERARCHY_1); break;
+		case(2):DVBT_SET_HIERARCHY(&feparams, HIERARCHY_2); break;
+		case(4):DVBT_SET_HIERARCHY(&feparams, HIERARCHY_4); break;
 		default:
 			logwrite(LOG_ERROR, "fe: Unknown DVB-T hierarchy %d", adapter->fe.dvbt.hierarchy);
 			exit(-1);
 	}
 
-	if (ioctl(adapter->fe.fd, IOCTL_SET_FE, &feparams) < 0) {
+	if (ioctl(adapter->fe.fd, FE_SET_FRONTEND, &feparams) < 0) {
 		logwrite(LOG_ERROR, "ioctl FE_SET_FRONTEND failed");
 		exit(-1);
 	}
@@ -301,46 +292,45 @@ int fe_tune_dvbt(struct adapter_s *adapter) {
 }
 
 static int fe_tune_dvbc(struct adapter_s *adapter) {
-	FE_PARAM	feparams;
+	struct dvb_frontend_parameters	feparams;
 
-	memset(&feparams, 0, sizeof(FE_PARAM));
+	memset(&feparams, 0, sizeof(struct dvb_frontend_parameters));
 
 	feparams.frequency = adapter->fe.dvbc.freq;
 
-	DVB_SET_DELIVERY(&feparams, DVBFE_DELSYS_DVBC);
 	DVBC_SET_SYMBOLRATE(&feparams, adapter->fe.dvbc.srate);
 
 	feparams.inversion=INVERSION_AUTO;
 
 	switch(adapter->fe.dvbc.modulation) {
-		case -1: DVBC_SET_MODULATION(&feparams, DVBFE_MOD_QPSK); break;
-		case 0: DVBC_SET_MODULATION(&feparams, DVBFE_MOD_QAMAUTO); break;
-		case 16: DVBC_SET_MODULATION(&feparams, DVBFE_MOD_QAM16); break;
-		case 32: DVBC_SET_MODULATION(&feparams, DVBFE_MOD_QAM32); break;
-		case 64: DVBC_SET_MODULATION(&feparams, DVBFE_MOD_QAM64); break;
-		case 128: DVBC_SET_MODULATION(&feparams, DVBFE_MOD_QAM128); break;
-		case 256: DVBC_SET_MODULATION(&feparams, DVBFE_MOD_QAM256); break;
+		case -1: DVBC_SET_MODULATION(&feparams, QPSK); break;
+		case 0: DVBC_SET_MODULATION(&feparams, QAM_AUTO); break;
+		case 16: DVBC_SET_MODULATION(&feparams, QAM_16); break;
+		case 32: DVBC_SET_MODULATION(&feparams, QAM_32); break;
+		case 64: DVBC_SET_MODULATION(&feparams, QAM_64); break;
+		case 128: DVBC_SET_MODULATION(&feparams, QAM_128); break;
+		case 256: DVBC_SET_MODULATION(&feparams, QAM_256); break;
 		default:
 			logwrite(LOG_ERROR, "Unknown modulation %d", adapter->fe.dvbc.modulation);
 			exit(-1);
 	}
 	switch(adapter->fe.dvbc.fec) {
-		case 0: DVBC_SET_FEC(&feparams, DVBFE_FEC_NONE); break;
-		case 1: DVBC_SET_FEC(&feparams, DVBFE_FEC_1_2); break;
-		case 2: DVBC_SET_FEC(&feparams, DVBFE_FEC_2_3); break;
-		case 3: DVBC_SET_FEC(&feparams, DVBFE_FEC_3_4); break;
-		case 4: DVBC_SET_FEC(&feparams, DVBFE_FEC_4_5); break;
-		case 5: DVBC_SET_FEC(&feparams, DVBFE_FEC_5_6); break;
-		case 6: DVBC_SET_FEC(&feparams, DVBFE_FEC_6_7); break;
-		case 7: DVBC_SET_FEC(&feparams, DVBFE_FEC_7_8); break;
-		case 8: DVBC_SET_FEC(&feparams, DVBFE_FEC_8_9); break;
-		case 9: DVBC_SET_FEC(&feparams, DVBFE_FEC_AUTO); break;
+		case 0: DVBC_SET_FEC(&feparams, FEC_NONE); break;
+		case 1: DVBC_SET_FEC(&feparams, FEC_1_2); break;
+		case 2: DVBC_SET_FEC(&feparams, FEC_2_3); break;
+		case 3: DVBC_SET_FEC(&feparams, FEC_3_4); break;
+		case 4: DVBC_SET_FEC(&feparams, FEC_4_5); break;
+		case 5: DVBC_SET_FEC(&feparams, FEC_5_6); break;
+		case 6: DVBC_SET_FEC(&feparams, FEC_6_7); break;
+		case 7: DVBC_SET_FEC(&feparams, FEC_7_8); break;
+		case 8: DVBC_SET_FEC(&feparams, FEC_8_9); break;
+		case 9: DVBC_SET_FEC(&feparams, FEC_AUTO); break;
 		default:
 			logwrite(LOG_ERROR, "Unknown fec %d", adapter->fe.dvbc.fec);
 			exit(-1);
 	}
 
-	if (ioctl(adapter->fe.fd, IOCTL_SET_FE, &feparams) < 0) {
+	if (ioctl(adapter->fe.fd, FE_SET_FRONTEND, &feparams) < 0) {
 		logwrite(LOG_ERROR, "ioctl FE_SET_FRONTEND failed");
 		exit(-1);
 	}
@@ -422,9 +412,9 @@ static void fe_timer_init(struct adapter_s *adapter) {
 static void fe_event(int fd, short ev, void *arg) {
 	struct adapter_s		*adapter=arg;
 	int				res, status;
-	FE_EVENT			event;
+	struct dvb_frontend_event	event;
 
-	res=ioctl(adapter->fe.fd, IOCTL_GET_EVENT, &event);
+	res=ioctl(adapter->fe.fd, FE_GET_EVENT, &event);
 
 	if (res < 0 && errno != EOVERFLOW) {
 		logwrite(LOG_ERROR, "fe: Adapter %d Status event overflow %d",
@@ -432,7 +422,7 @@ static void fe_event(int fd, short ev, void *arg) {
 		return;
 	}
 
-	status=FE_GET_STATUS(event);
+	status=event.status;
 
 	if (res >= 0 && status) {
 		if (!(status & FE_TIMEDOUT)) {
@@ -447,49 +437,10 @@ static void fe_event(int fd, short ev, void *arg) {
 	}
 }
 
-#ifdef MULTIPROTO
-
-static void fe_checkcap(struct adapter_s *adapter) {
-
-	/* With multiproto API changes from 2008-03-09 one has to set the
-	 * delsys before anything else
-	 */
-	if (ioctl(adapter->fe.fd, IOCTL_SET_DELSYS, &adapter->type)) {
-		logwrite(LOG_ERROR, "fe: failed to set delivery system with IOCTL_SET_DELSYS with %s", strerror(errno));
-		exit(-1);
-	}
-
-	if (ioctl(adapter->fe.fd, IOCTL_GET_INFO, &adapter->fe.feinfo)) {
-		logwrite(LOG_ERROR, "fe: ioctl(DVBFE_GET_INFO...) failed");
-		exit(-1);
-	}
-
-	logwrite(LOG_DEBUG, "fe: adapter %d delivery type %d name \"%s\"",
-				adapter->no,
-				adapter->type,
-				adapter->fe.feinfo.name);
-
-	logwrite(LOG_DEBUG, "fe: adapter %d frequency min %d max %d step %d tolerance %d",
-				adapter->no,
-				adapter->fe.feinfo.frequency_min,
-				adapter->fe.feinfo.frequency_max,
-				adapter->fe.feinfo.frequency_step,
-				adapter->fe.feinfo.frequency_tolerance);
-
-	logwrite(LOG_DEBUG, "fe: adapter %d symbol rate min %d max %d tolerance %d",
-				adapter->no,
-				adapter->fe.feinfo.symbol_rate_min,
-				adapter->fe.feinfo.symbol_rate_max,
-				adapter->fe.feinfo.symbol_rate_tolerance);
-
-}
-
-#else
-
 static void fe_checkcap(struct adapter_s *adapter) {
 	char		*type="unknown";
 
-	if (ioctl(adapter->fe.fd, IOCTL_GET_INFO, &adapter->fe.feinfo)) {
+	if (ioctl(adapter->fe.fd, FE_GET_INFO, &adapter->fe.feinfo)) {
 		logwrite(LOG_ERROR, "fe: ioctl(FE_GET_INFO...) failed");
 		exit(-1);
 	}
@@ -540,7 +491,6 @@ static void fe_checkcap(struct adapter_s *adapter) {
 				adapter->fe.feinfo.symbol_rate_max,
 				adapter->fe.feinfo.symbol_rate_tolerance);
 }
-#endif
 
 int fe_tune_init(struct adapter_s *adapter) {
 	char		fename[128];
