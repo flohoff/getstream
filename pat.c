@@ -184,6 +184,10 @@ struct pat_s *pat_parse(struct adapter_s *a) {
 					pat_pidfrompat(s, pnr));
 
 			next->progcount++;
+
+			logwrite(LOG_DEBUG, "pat: found program %04x(%d) pmt pid %04x",
+				pat_pnrfrompat(s, pnr), pat_pnrfrompat(s, pnr),
+				pat_pidfrompat(s, pnr));
 		}
 	}
 
