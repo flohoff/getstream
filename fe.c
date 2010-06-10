@@ -123,13 +123,58 @@ char *fe_decode_status(int status) {
 	return str;
 };
 
+static int fe_get_freqoffset(struct adapter_s *adapter) {
+	int	freqoffset;
+
+	if (adapter->fe.dvbs.t_freq <= 2200000)
+		return adapter->fe.dvbs.t_freq;
+
+	if (adapter->fe.dvbs.lnb_slof) {
+		/* Ku Band LNB */
+		if (adapter->fe.dvbs.t_freq < adapter->fe.dvbs.lnb_slof) {
+			freqoffset=(adapter->fe.dvbs.t_freq-
+					adapter->fe.dvbs.lnb_lof1);
+		} else {
+			freqoffset=(adapter->fe.dvbs.t_freq-
+					adapter->fe.dvbs.lnb_lof2);
+		}
+	} else {
+		/* C Band LNB */
+		if (adapter->fe.dvbs.lnb_lof2) {
+			if (adapter->fe.dvbs.t_pol == POL_H) {
+				freqoffset=(adapter->fe.dvbs.lnb_lof2-
+					adapter->fe.dvbs.t_freq);
+			} else {
+				freqoffset=(adapter->fe.dvbs.lnb_lof1-
+					adapter->fe.dvbs.t_freq);
+			}
+		} else {
+			freqoffset=adapter->fe.dvbs.lnb_lof1-adapter->fe.dvbs.t_freq;
+		}
+	}
+
+	return freqoffset;
+}
+
+static int fe_get_voltage(struct adapter_s *adapter) {
+	return (adapter->fe.dvbs.t_pol == POL_H) ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13;
+}
+
+static int fe_is_highband(struct adapter_s *adapter) {
+	return (adapter->fe.dvbs.t_freq > adapter->fe.dvbs.lnb_slof);
+}
+
+static int fe_get_tone(struct adapter_s *adapter) {
+	return (fe_is_highband(adapter) ? SEC_TONE_ON : SEC_TONE_OFF);
+}
+
 static int fe_tune_dvbs(struct adapter_s *adapter) {
 	struct dvb_frontend_parameters	feparams;
 	int				voltage, tone=SEC_TONE_OFF;
 
 	memset(&feparams, 0, sizeof(struct dvb_frontend_parameters));
 
-	voltage=(adapter->fe.dvbs.t_pol == POL_H) ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13;
+	voltage=fe_get_voltage(adapter);
 
 	if (adapter->fe.dvbs.t_freq > 2200000) {
 		if (adapter->fe.dvbs.lnb_slof) {
@@ -291,6 +336,39 @@ int fe_tune_dvbt(struct adapter_s *adapter) {
 	return 0;
 }
 
+#if (DVB_API_VERSION>=5)
+
+static int fe_tune_dvbs2(struct adapter_s *adapter) {
+	struct dtv_property	p[DTV_IOCTL_MAX_MSGS];
+	struct dtv_properties	cmds;
+
+	p[0].cmd = DTV_CLEAR;
+	p[1].cmd = DTV_DELIVERY_SYSTEM; p[1].u.data = SYS_DVBS2;
+	p[2].cmd = DTV_SYMBOL_RATE;	p[2].u.data = adapter->fe.dvbs.t_srate;
+	p[3].cmd = DTV_INNER_FEC;	p[3].u.data = FEC_AUTO;
+	p[4].cmd = DTV_INVERSION;	p[4].u.data = INVERSION_AUTO;
+	p[5].cmd = DTV_FREQUENCY;	p[5].u.data = fe_get_freqoffset(adapter);
+	p[6].cmd = DTV_VOLTAGE;		p[6].u.data = fe_get_voltage(adapter);
+	p[7].cmd = DTV_TONE;		p[7].u.data = fe_get_tone(adapter);
+	p[8].cmd = DTV_TUNE;		p[8].u.data = 0;
+
+	cmds.num=9;
+	cmds.props=p;
+
+	if (ioctl(adapter->fe.fd, FE_SET_PROPERTY, &cmds) < 0) {
+		logwrite(LOG_ERROR, "fe: ioctl FE_SET_PROPERTY failed - %s", strerror(errno));
+		exit(-1);
+	}
+
+	return 0;
+}
+#else
+static int fe_tune_dvbs2(struct adapter_s *adapter) {
+	logwrite(LOG_ERROR, "fe: not compiled against DVB Api 5 - no DVB-S2 support");
+	exit(-1);
+}
+#endif
+
 static int fe_tune_dvbc(struct adapter_s *adapter) {
 	struct dvb_frontend_parameters	feparams;
 
@@ -341,6 +419,8 @@ static int fe_tune_dvbc(struct adapter_s *adapter) {
 static int fe_tune(struct adapter_s *adapter) {
 	switch(adapter->type) {
 		case(AT_DVBS2):
+			fe_tune_dvbs2(adapter);
+			break;
 		case(AT_DVBS):
 			fe_tune_dvbs(adapter);
 			break;
@@ -437,7 +517,54 @@ static void fe_event(int fd, short ev, void *arg) {
 	}
 }
 
-static void fe_checkcap(struct adapter_s *adapter) {
+#if (DVB_API_VERSION>=5)
+static int fe_api5_checkcap(struct adapter_s *adapter) {
+	struct dtv_property p[1];
+	struct dtv_properties cmds;
+
+	p[0].cmd = DTV_DELIVERY_SYSTEM;
+
+	cmds.props = p;
+	cmds.num = 1;
+
+	if (ioctl(adapter->fe.fd, FE_GET_PROPERTY, &cmds)) {
+		logwrite(LOG_DEBUG, "fe: ioctl(FE_GET_PROPERTY) failed - no DVBS2 aka API 5 support?");
+		return 0;
+	}
+
+	switch (p[0].u.data) {
+		case(SYS_DVBS):
+			if (adapter->type == AT_DVBS)
+				break;
+			logwrite(LOG_ERROR, "fe: Adapter %d is an DVB-S card - config is not for DVB-S", adapter->no);
+			exit(-1);
+		case(SYS_DVBS2):
+			if (adapter->type == AT_DVBS || adapter->type == AT_DVBS2)
+				break;
+			logwrite(LOG_ERROR, "fe: Adapter %d is an DVB-S2 card - config is not DVB-S or S2", adapter->no);
+			exit(-1);
+		case(SYS_DVBT):
+			if (adapter->type == AT_DVBT)
+				break;
+			logwrite(LOG_ERROR, "fe: Adapter %d is an DVB-T card - config is not for DVB-T", adapter->no);
+			exit(-1);
+		case(SYS_DVBC_ANNEX_B):
+		case(SYS_DVBC_ANNEX_AC):
+			if (adapter->type == AT_DVBC)
+				break;
+			logwrite(LOG_ERROR, "fe: Adapter %d is an DVB-C card - config is not for DVB-C", adapter->no);
+			exit(-1);
+	}
+
+	return 1;
+}
+#else
+static int fe_api5_checkcap(struct adapter_s *adapter) {
+	return 0;
+}
+#endif
+
+static void fe_api3_checkcap(struct adapter_s *adapter) {
 	char		*type="unknown";
 
 	if (ioctl(adapter->fe.fd, FE_GET_INFO, &adapter->fe.feinfo)) {
@@ -451,7 +578,8 @@ static void fe_checkcap(struct adapter_s *adapter) {
 			if (adapter->type == AT_DVBS)
 				break;
 			logwrite(LOG_ERROR, "fe: Adapter %d is an DVB-S card - config is not for DVB-S", adapter->no);
-			exit(-1);
+			break;
+			//exit(-1);
 		case(FE_OFDM):
 			type="OFDM";
 			if (adapter->type == AT_DVBT)
@@ -490,6 +618,16 @@ static void fe_checkcap(struct adapter_s *adapter) {
 				adapter->fe.feinfo.symbol_rate_min,
 				adapter->fe.feinfo.symbol_rate_max,
 				adapter->fe.feinfo.symbol_rate_tolerance);
+}
+
+static void fe_checkcap(struct adapter_s *adapter) {
+
+	if (fe_api5_checkcap(adapter))
+		return;
+
+	fe_api3_checkcap(adapter);
+
+	return;
 }
 
 int fe_tune_init(struct adapter_s *adapter) {
