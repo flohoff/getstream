@@ -1,5 +1,10 @@
 CC=gcc
-CFLAGS=-O0 -g -Wall  -I. -I/usr/include/glib-2.0/ -I/usr/lib/glib-2.0/include/
+CFLAGS=-Wall  -I. -I/usr/include/glib-2.0/ -I/usr/lib/glib-2.0/include/
+ifdef OPT
+CFLAGS+=-O2
+else
+CFLAGS+=-O0 -g
+endif
 LDFLAGS=-levent -lglib-2.0 -lpthread
 OBJ-getstream=getstream.o fe.o crc32.o \
 	libhttp.o libconf.o config.o util.o logging.o \
