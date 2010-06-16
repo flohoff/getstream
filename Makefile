@@ -31,4 +31,4 @@ clean:
 	-rm -f core vgcore.pid* core.* gmon.out
 
 distclean: clean
-	-rm -rf CVS .cvsignore
+	-rm -rf CVS .cvsignore .git .gitignore
