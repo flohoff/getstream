@@ -37,6 +37,11 @@ Configuration:
 		round read from the kernel. Setting this too high just
 		wastes memory (a packet is 188 Bytes) setting it to low
 		creates more context-switches and will reduce performance.
+
+	  - dvr-buffer
+		Sets the kernel DVR ring buffer size in bytes (should be
+		multiple of PAGE_SIZE e.g. 4096 on 32bit x86) via
+		DMX_SET_BUFFER_SIZE. 
 			
 	  - stat-interval
 	  	The interval in seconds you will see the statistics on in the log e.g.

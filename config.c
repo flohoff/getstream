@@ -446,6 +446,8 @@ static int cf_adapter_budget(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->budgetmode=val->num; return 1; }
 static int cf_adapter_packetbuffer(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->dvr.buffer.size=val->num; return 1; }
+static int cf_adapter_dvrbuffer(struct lc_centry *ce, struct lc_value *val)
+	{ adapter->dvr.dvrbuffer=val->num; return 1; }
 static int cf_adapter_statinterval(struct lc_centry *ce, struct lc_value *val)
 	{ adapter->dvr.stat.interval=val->num; return 1; }
 static int cf_adapter_stuckinterval(struct lc_centry *ce, struct lc_value *val)
@@ -454,6 +456,7 @@ static int cf_adapter_stuckinterval(struct lc_centry *ce, struct lc_value *val)
 static struct lc_ventry conf_adapter[] = {
 	{ "budget-mode", 0, 1, LCV_BOOL, 0, NULL, cf_adapter_budget },
 	{ "packet-buffer", 0, 1, LCV_NUM, 0, NULL, cf_adapter_packetbuffer },
+	{ "dvr-buffer", 0, 1, LCV_NUM, 0, NULL, cf_adapter_dvrbuffer },
 	{ "stat-interval", 0, 1, LCV_NUM, 0, NULL, cf_adapter_statinterval },
 	{ "stuck-interval", 0, 1, LCV_NUM, 0, NULL, cf_adapter_stuckinterval },
 	{ "stream", 0, 0, LCV_NONE, 0, conf_stream, cf_stream_start },

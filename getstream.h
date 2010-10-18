@@ -195,6 +195,8 @@ struct adapter_s {
 		time_t			lastinput;
 		int			stuckinterval;
 
+		int			dvrbuffer;
+
 		/* List of full stream callbacks */
 		GList			*fullcb;
 
@@ -217,6 +219,7 @@ struct adapter_s {
 
 	struct {
 		struct event		dmxevent;
+		int			buffersize;
 		/* dmx */
 		struct {
 			int	fd;

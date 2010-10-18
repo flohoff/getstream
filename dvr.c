@@ -322,5 +322,11 @@ int dvr_init(struct adapter_s *a) {
 	dvr_init_stat_timer(a);
 	dvr_stuck_init(a);
 
+	if (a->dvr.dvrbuffer) {
+		if (ioctl(dvrfd, DMX_SET_BUFFER_SIZE, a->dvr.dvrbuffer) < 0) {
+			logwrite(LOG_ERROR, "demux: DMX_SET_BUFFER_SIZE returned with errno %d / %s", errno, strerror(errno));
+		}
+	}
+
 	return 1;
 }
