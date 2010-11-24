@@ -160,7 +160,8 @@ struct pat_s *pat_parse(struct adapter_s *a) {
 	struct pat_s	*next;
 	unsigned int	secnum;
 	unsigned int	lastsecnum;
-	unsigned int	pnr;
+	unsigned int	i;
+	unsigned int	pnr, pid;
 
 	if (!a->pat.psi.section[0])
 		return NULL;
@@ -175,19 +176,26 @@ struct pat_s *pat_parse(struct adapter_s *a) {
 		if (!s)
 			continue;
 
-		for(pnr=0;pnr<pat_pnrno(s);pnr++) {
-			if (pat_pnrfrompat(s, pnr) == 0)
+		for(i=0;i<pat_pnrno(s);i++) {
+			if (pat_pnrfrompat(s, i) == 0)
 				continue;
 
-			pat_add_program(next,
-					pat_pnrfrompat(s, pnr),
-					pat_pidfrompat(s, pnr));
+			pid=pat_pidfrompat(s, i);
+			pnr=pat_pnrfrompat(s, i);
+
+			/* Dump defective pat section with pmt pid 0 */
+			if (pid == 0) {
+				dump_hex(LOG_XTREME, "pat pmtpidnull:",
+					a->pat.psi.section[secnum]->data,
+					a->pat.psi.section[secnum]->len);	
+			}
+
+			pat_add_program(next, pnr, pid);
 
 			next->progcount++;
 
 			logwrite(LOG_DEBUG, "pat: found program %04x(%d) pmt pid %04x",
-				pat_pnrfrompat(s, pnr), pat_pnrfrompat(s, pnr),
-				pat_pidfrompat(s, pnr));
+				pnr, pnr, pid);
 		}
 	}
 
