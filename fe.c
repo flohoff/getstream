@@ -1,17 +1,20 @@
-#include <sys/poll.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
 #include <errno.h>
-#include <time.h>
-
-#include <string.h>
+#include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include <unistd.h>
-
+#include <sys/ioctl.h>
+#include <sys/poll.h>
+#include <sys/select.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include "getstream.h"
+
+#define FE_CHECKSTATUS_INTERVAL	5 /* sec  */
 
 struct diseqc_cmd {
 	struct dvb_diseqc_master_cmd cmd;
@@ -45,7 +48,7 @@ static inline void msleep(uint32_t msec)
 		;
 }
 
-int diseqc_send_msg (int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, fe_sec_tone_mode_t t, fe_sec_mini_cmd_t b) {
+int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, fe_sec_tone_mode_t t, fe_sec_mini_cmd_t b) {
 	int err;
 
 	if ((err = ioctl(fd, FE_SET_TONE, SEC_TONE_OFF)))
@@ -74,7 +77,7 @@ int diseqc_send_msg (int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, fe_sec
 }
 
 
-int setup_switch (int frontend_fd, int switch_pos, int voltage_18, int hiband) {
+int setup_switch(int frontend_fd, int switch_pos, int voltage_18, int hiband) {
 	struct diseqc_cmd *cmd[2] = { NULL, NULL };
 	int i = 4 * switch_pos + 2 * hiband + (voltage_18 ? 1 : 0);
 
@@ -439,7 +442,6 @@ static int fe_tune(struct adapter_s *adapter) {
 
 
 #define FE_TUNE_MINDELAY	5
-
 void fe_retune(struct adapter_s *adapter) {
 	time_t		now;
 
@@ -450,71 +452,6 @@ void fe_retune(struct adapter_s *adapter) {
 		return;
 
 	fe_tune(adapter);
-}
-
-static void fe_timer_init(struct adapter_s *adapter);
-
-static void fe_check_status(int fd, short event, void *arg) {
-	struct adapter_s	*adapter=arg;
-	fe_status_t		status;
-	int			res;
-
-	res=ioctl(adapter->fe.fd, FE_READ_STATUS, &status);
-
-	if (res == 0) {
-		if (!(status & FE_HAS_LOCK)) {
-			logwrite(LOG_INFO, "fe: Adapter %d Status: 0x%02x (%s)",
-					adapter->no, status, fe_decode_status(status));
-			fe_retune(adapter);
-		}
-	}
-
-	fe_timer_init(adapter);
-}
-
-#define FE_CHECKSTATUS_INTERVAL	5
-
-static void fe_timer_init(struct adapter_s *adapter) {
-	struct timeval	tv;
-
-	tv.tv_sec=FE_CHECKSTATUS_INTERVAL;
-	tv.tv_usec=0;
-
-	evtimer_set(&adapter->fe.timer, fe_check_status, adapter);
-	evtimer_add(&adapter->fe.timer, &tv);
-}
-
-/*
- * We had an event on the frontend filedescriptor - poll the event
- * and dump the status
- *
- */
-static void fe_event(int fd, short ev, void *arg) {
-	struct adapter_s		*adapter=arg;
-	int				res, status;
-	struct dvb_frontend_event	event;
-
-	res=ioctl(adapter->fe.fd, FE_GET_EVENT, &event);
-
-	if (res < 0 && errno != EOVERFLOW) {
-		logwrite(LOG_ERROR, "fe: Adapter %d Status event overflow %d",
-				adapter->no, errno);
-		return;
-	}
-
-	status=event.status;
-
-	if (res >= 0 && status) {
-		if (!(status & FE_TIMEDOUT)) {
-
-			logwrite(LOG_INFO, "fe: Adapter %d Status: 0x%02x (%s)",
-				adapter->no, status, fe_decode_status(status));
-
-			if (!(status & FE_HAS_LOCK)) {
-				fe_retune(adapter);
-			}
-		}
-	}
 }
 
 #if (DVB_API_VERSION>=5)
@@ -630,8 +567,58 @@ static void fe_checkcap(struct adapter_s *adapter) {
 	return;
 }
 
+
+static void *fe_event_checkstatus_thread(void *_data) {
+	struct adapter_s *adapter=_data;
+	fd_set except_set;
+	int ret;
+	int res;
+	int status;
+	struct dvb_frontend_event event;
+	struct timeval tv;
+
+	while (42) {
+		FD_ZERO(&except_set);
+		FD_SET(adapter->fe.fd, &except_set);
+		tv.tv_sec = FE_CHECKSTATUS_INTERVAL;
+		tv.tv_usec = 0;
+
+		ret = select(adapter->fe.fd, NULL, NULL, &except_set, &tv);
+		if (ret > 0) {
+			/* Events arrived, check them.  */
+			res = ioctl(adapter->fe.fd, FE_GET_EVENT, &event);
+			if (res < 0 && errno != EOVERFLOW) {
+				logwrite(LOG_ERROR, "fe: Adapter %d Status event %d = %s",
+					 adapter->no, errno, strerror(errno));
+				continue;
+			}
+
+			status = event.status;
+			if (res >= 0 && status) {
+				if (!(status & FE_TIMEDOUT)) {
+					logwrite(LOG_INFO, "fe: Adapter %d Status: 0x%02x (%s)",
+						 adapter->no, status, fe_decode_status(status));
+
+					if (!(status & FE_HAS_LOCK))
+						fe_retune(adapter);
+				}
+			}
+		} else if (ret == 0) {
+			res = ioctl(adapter->fe.fd, FE_READ_STATUS, &status);
+			if (res == 0 && !(status & FE_HAS_LOCK)) {
+				logwrite(LOG_INFO, "fe: Adapter %d Status: 0x%02x (%s)",
+					 adapter->no, status, fe_decode_status(status));
+				fe_retune(adapter);
+			}
+		}
+	}
+
+	return NULL;
+}
+
 int fe_tune_init(struct adapter_s *adapter) {
 	char		fename[128];
+	pthread_t	thread;
 
 	sprintf(fename, "/dev/dvb/adapter%d/frontend0", adapter->no);
 
@@ -650,11 +637,8 @@ int fe_tune_init(struct adapter_s *adapter) {
 	fe_tune(adapter);
 
 	/* Watch the filedescriptor for frontend events */
-	event_set(&adapter->fe.event, adapter->fe.fd, EV_READ|EV_PERSIST, fe_event, adapter);
-	event_add(&adapter->fe.event, NULL);
-
-	/* Create a timer to regular poll the status */
-	fe_timer_init(adapter);
+	pthread_create(&thread, NULL, &fe_event_checkstatus_thread, adapter);
+	pthread_detach(thread);
 
 	return 0;
 }
