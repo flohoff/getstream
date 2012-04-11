@@ -8,5 +8,6 @@ core*
 *.rej
 tsdecode
 getstream
+Makefile.defs
 
 !.gitignore

@@ -1,11 +1,17 @@
 CC=gcc
-CFLAGS=-Wall  -I. -I/usr/include/glib-2.0/ -I/usr/lib/glib-2.0/include/
+CFLAGS=-Wall -I. 
+
 ifdef OPT
 CFLAGS+=-O2
 else
 CFLAGS+=-O0 -g
 endif
-LDFLAGS=-levent -lglib-2.0 -lpthread
+
+LDFLAGS=-lpthread
+
+MDEFS := $(shell sh Makefile.defs.sh >Makefile.defs)
+include Makefile.defs
+
 OBJ-getstream=getstream.o fe.o crc32.o \
 	libhttp.o libconf.o config.o util.o logging.o \
 	stream.o input.o \
@@ -29,6 +35,7 @@ clean:
 	-rm -f $(OBJ-getstream) $(OBJ-tsdecode)
 	-rm -f getstream tsdecode 
 	-rm -f core vgcore.pid* core.* gmon.out
+	-rm -f Makefile.defs
 
 distclean: clean
 	-rm -rf CVS .cvsignore .git .gitignore
