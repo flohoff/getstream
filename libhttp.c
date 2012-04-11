@@ -236,7 +236,7 @@ int http_return_stream(struct http_connection *hc, void *data, size_t datalen) {
 
 	/* In case of Transfer-Encoding: chunked send a chunk - otherwise just data */
 	if (hc->proto == HP_HTTP11) {
-		evbuffer_add_printf(hc->evb,"%x\r\n", datalen);
+		evbuffer_add_printf(hc->evb,"%zx\r\n", datalen);
 		evbuffer_add(hc->evb, data, datalen);
 		evbuffer_add_printf(hc->evb, "\r\n");
 	} else {
