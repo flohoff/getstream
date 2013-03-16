@@ -10,7 +10,7 @@
 #include <strings.h>
 #include <string.h>
 
-#include <glib/glist.h>
+#include <glib.h>
 
 #include "config.h"
 #include "libconf.h"

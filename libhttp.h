@@ -7,8 +7,7 @@
 #include <netinet/in.h>
 #include <event.h>
 
-#include <glib/glist.h>
-#include <glib/ghash.h>
+#include <glib.h>
 
 
 #define MAX_HEADER_SIZE	3000

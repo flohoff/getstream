@@ -1,5 +1,5 @@
 
-#include <glib/glist.h>
+#include <glib.h>
 
 #include "getstream.h"
 

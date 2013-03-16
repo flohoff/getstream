@@ -4,7 +4,7 @@
 #include "getstream.h"
 #include "libhttp.h"
 
-#include <glib/glist.h>
+#include <glib.h>
 
 #include <event.h>
 

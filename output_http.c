@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <glib/glist.h>
+#include <glib.h>
 
 #include "output.h"
 #include "simplebuffer.h"

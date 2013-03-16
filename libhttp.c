@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <glib/glist.h>
+#include <glib.h>
 
 #include "libhttp.h"
 

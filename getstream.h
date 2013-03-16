@@ -10,7 +10,7 @@
 #include <linux/dvb/frontend.h>
 
 #include <event.h>
-#include <glib/glist.h>
+#include <glib.h>
 
 #include "sap.h"
 #include "psi.h"
