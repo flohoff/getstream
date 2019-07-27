@@ -1,10 +1,17 @@
 
-Building:
-	- Install libevent and glib
-	- Probably adapt paths in Makefile
-	- type "make"
+Building
+========
 
-Configuration:
+	sudo apt-get install make build-essential libglib2.0-dev libevent-dev pkg-config
+	make
+
+Execution
+=========
+
+	getstream -dd -c getstream.conf
+
+Configuration
+=============
 
   Adapter:
   --------
