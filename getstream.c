@@ -166,6 +166,8 @@ int main(int argc, char **argv) {
 			sl=g_list_next(sl);
 		}
 
+		sdt_init(a);
+
 		al=g_list_next(al);
 	}
 

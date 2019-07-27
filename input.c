@@ -17,7 +17,7 @@ static void input_init_pid(struct input_s *input) {
 	input->pid.cbkey=dvr_add_pcb(input->stream->adapter,
 					input->pid.pid,
 					DVRCB_TS,
-					PID_STATIC,
+					PID_TYPE_STATIC,
 					stream_send,
 					input->stream);
 }
@@ -26,7 +26,7 @@ static void input_init_full(struct input_s *input) {
 	input->pid.cbkey=dvr_add_pcb(input->stream->adapter,
 					PID_MAX+1,
 					DVRCB_TS,
-					PID_STATIC,
+					PID_TYPE_STATIC,
 					stream_send,
 					input->stream);
 }

@@ -89,6 +89,7 @@
 #define PSI_RC_LENFAIL		-6
 #define PSI_RC_CORRUPT		-7
 
+#define SDT_TABLE_ID		0x42
 
 struct psisec_s {
 	unsigned int	len;

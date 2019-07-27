@@ -17,7 +17,7 @@ OBJ-getstream=getstream.o fe.o crc32.o \
 	stream.o input.o \
 	output.o output_http.o output_udp.o output_pipe.o output_rtp.o \
 	dmx.o dvr.o \
-	pat.o pmt.o psi.o \
+	pat.o pmt.o psi.o sdt.o \
 	simplebuffer.o sap.o \
 	socket.o
 

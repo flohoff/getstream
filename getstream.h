@@ -69,17 +69,18 @@ extern int loglevel;
 #define	DVR_DEFAULT_STUCKINT	5000		/* 5 seconds stuck check interval */
 
 enum {
-	PID_NONE,
-	PID_PAT,
-	PID_PMT,
-	PID_PCR,
-	PID_VIDEO,
-	PID_AUDIO,
-	PID_PRIVATE,
-	PID_USER,
-	PID_STATIC,
-	PID_REASSEMBLE,
-	PID_OTHER,
+	PID_TYPE_NONE,
+	PID_TYPE_PAT,
+	PID_TYPE_SDT,
+	PID_TYPE_PMT,
+	PID_TYPE_PCR,
+	PID_TYPE_VIDEO,
+	PID_TYPE_AUDIO,
+	PID_TYPE_PRIVATE,
+	PID_TYPE_USER,
+	PID_TYPE_STATIC,
+	PID_TYPE_REASSEMBLE,
+	PID_TYPE_OTHER,
 };
 
 enum {
@@ -238,6 +239,11 @@ struct adapter_s {
 	struct {
 		GList		*pnrlist;
 	} pmt;
+
+	struct {
+		void		*cbc;
+		struct psi_s	psi;
+	} sdt;
 };
 
 /*
@@ -351,6 +357,14 @@ struct pat_s *pat_new();
 void pat_add_program(struct pat_s *pat, uint16_t pnr, uint16_t pid);
 unsigned int pat_send(struct pat_s *pat, uint8_t cc, uint8_t version, uint16_t tid, void (*callback)(void *data, void *arg), void *arg);
 void pat_init(struct adapter_s *adapter);
+
+/*
+ *
+ * sdt.c
+ *
+ */
+void sdt_init(struct adapter_s *adapter);
+
 
 /*
  *

@@ -20,7 +20,7 @@
 
 #include "getstream.h"
 
-const char       *pidtnames[]={ "None", "PAT", "PMT", "PCR", "Video", "Audio", "Privat", "User", "Static", "Reassemble", "Other" };
+const char       *pidtnames[]={ "None", "PAT", "SDT", "PMT", "PCR", "Video", "Audio", "Privat", "User", "Static", "Reassemble", "Other" };
 
 struct pidcallback_s {
 	void		(*callback)(void *data, void *arg);
@@ -147,7 +147,7 @@ void *dvr_add_pcb(struct adapter_s *a, unsigned int pid, unsigned int type,
 
 				/* Recursion - SECTION needs the ts packets */
 				a->dvr.pidtable[pid].seccb=
-					dvr_add_pcb(a, pid, DVRCB_TS, PID_REASSEMBLE,
+					dvr_add_pcb(a, pid, DVRCB_TS, PID_TYPE_REASSEMBLE,
 					dvr_section_reassemble, &a->dvr.pidtable[pid]);
 			}
 

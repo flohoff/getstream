@@ -305,6 +305,6 @@ void pat_init(struct adapter_s *adapter) {
 		return;
 
 	adapter->pat.cbc=dvr_add_pcb(adapter,
-				0, DVRCB_SECTION, PID_PAT,
+				0, DVRCB_SECTION, PID_TYPE_PAT,
 				pat_section_cb, adapter);
 }

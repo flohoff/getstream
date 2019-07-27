@@ -118,11 +118,11 @@ static int pmt_mapstreamtype(uint8_t type) {
 				/* ISO/IEC 11172-2		*/
 		case 27:	/* ITU-T Rec. H.264		*/
 				/* ISO/IEC 14496-10 Video	*/
-			return PID_VIDEO;
+			return PID_TYPE_VIDEO;
 			break;
 		case 3:		/* ISO/IEC 11172 Audio */
 		case 4:		/* ISO/IEC 13818-3 Audio */
-			return PID_AUDIO;
+			return PID_TYPE_AUDIO;
 			break;
 		case 5:		/* ISO/IEC 13818-1 Page 160 - Private Sections */
 		case 6:		/* ITU-T Rec. H.222.0 ISO/IEC 13818-1 PES - Private Data */
@@ -130,7 +130,7 @@ static int pmt_mapstreamtype(uint8_t type) {
 				 * in here encapsulated in the private data. As we dont
 				 * treat different pid types differently we don't care for
 				 * now						*/
-			return PID_PRIVATE;
+			return PID_TYPE_PRIVATE;
 			break;
 		case 7:	 /* ISO/IEC 13522 MHEG */
 		case 8:  /* ITU-T Rec. H.220.0 / ISO/IEC 13818-1 Annex A DSM CC */
@@ -140,13 +140,13 @@ static int pmt_mapstreamtype(uint8_t type) {
 		case 12: /* ISO/IEC 13818-6 Type C */
 		case 13: /* ISO/IEC 13818-6 Type D */
 		case 14: /* ISO/IEC 13818-1 auxiliary */
-			return PID_OTHER;
+			return PID_TYPE_OTHER;
 			break;
 		default:
 			if (type & 0x80)
-				return PID_USER;
+				return PID_TYPE_USER;
 	}
-	return PID_OTHER;
+	return PID_TYPE_OTHER;
 }
 
 static uint16_t pmt_pcr(struct psisec_s *section) {
@@ -306,7 +306,7 @@ static void pmt_update(struct program_s *prog) {
 	 */
 	if (current->pcrpid != PID_MAX) {
 		if (!pmt_prog_gets_pid(prog, current->pcrpid))
-			pmt_prog_join_pid(prog, current->pcrpid, PID_PCR);
+			pmt_prog_join_pid(prog, current->pcrpid, PID_TYPE_PCR);
 	}
 
 	/*
@@ -415,8 +415,8 @@ void pmt_pidfrompat(struct adapter_s *a, unsigned int pnr, unsigned int pmtpid) 
 
 	if (pmtpid) {
 		/* Add a callback for the new pmt pid */
-		prog->pmtpidcb=dvr_add_pcb(a, pmtpid, DVRCB_SECTION, PID_PMT, pmt_dvr_pmt_cb, prog);
-		pmt_prog_join_pid(prog, pmtpid, PID_PMT);
+		prog->pmtpidcb=dvr_add_pcb(a, pmtpid, DVRCB_SECTION, PID_TYPE_PMT, pmt_dvr_pmt_cb, prog);
+		pmt_prog_join_pid(prog, pmtpid, PID_TYPE_PMT);
 	} else {
 		/* FIXME - The Program disappeared - we should leave all pids */
 	}
