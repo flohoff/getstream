@@ -1,4 +1,25 @@
 
+What is getstream
+=================
+
+*Getstream* is a Digitial Video Broadcast (DVB) transport stream demultiplexer. On a
+satelite transponder you tens if not hundrets of services, be that radio or television
+programs. To make those services usable for your iTV/IPTV installation these
+services need to seperated from each other into individual streams. The input is typically
+a PCIe or USB DVB-S/S2/T/C interface, the output are one or multiple multicast
+groups or http urls. services can be filtered, pids can be outputtet to pipes
+for processing for example EPG or Radio RDS/TMC signals
+
+Typical applications are student dorm, hotel or cruise ship IPTV installations.
+
+Getstream is designed to run for months at a time without interruption or user
+interaction.
+
+Its design trys to avoid memory allocations in the hot path and tries to reduce
+memory footprint as much as possible to issue packet forwarding in the lowest
+possible CPU cache.
+
+
 Building
 ========
 
@@ -166,9 +187,59 @@ Configuration
 		full;
 	};
 
-  SAP:
-  ------
-	Can be used in the output-rtp and output-udp sections to send SAP announcements.
+  output-pipe
+  -----------
+	Can be used to dump a program or individual pids to a local pipe. This can
+	be used to parse and process EPG or Radio RDS/TMC data.
+
+	Example:
+	--------
+
+	output-pipe {
+		filename "/tmp/rdspipe";
+	};
+
+  output-udp/rtp
+  --------------
+
+	Used for Multicast output but will accept unicast destinations for example to feed a recoder. May
+	be either Real Time Protocol (RTP) or plain UDP encapsulation.
+
+	local-address	- Local address the udp socket should bind to
+	remote-address	- Remote address in ipv4 notation.
+	remote-port	- Remote port to send udp packets to.
+	ttl		- Time to Live set for UDP packets. Important for multicast
+
+	May contain a Service Announcement Protocol (SAP) section - see below.
+
+	Example:
+	--------
+
+		output-udp {
+			remote-address 239.0.71.1;
+			remote-port 3000;
+		};
+
+
+  output-http
+  -----------
+	Outputs the MPEG Transport Stream at a http url. Needs to have a global http port
+	number configured.
+
+	url	- Url path - FQDN is http://host:port/url
+
+	Example:
+	--------
+
+		output-http {
+			url /tv/daserste;
+		};
+
+  Service announcement protocol (SAP)
+  -----------------------------------
+
+	Can be used in the output-rtp and output-udp sections to send SAP announcements which for
+	example vlc can use to  automatically detect programs broadcasted.
 
 	scope		- Multicast group which is used for the SAP announcemens.
 			  Possible values:
